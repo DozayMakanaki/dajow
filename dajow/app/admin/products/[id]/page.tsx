@@ -34,12 +34,12 @@ export default function EditProductPage() {
     const data = new FormData(form)
 
     await updateProduct(id, {
-      name: data.get("name"),
+      name: data.get("name") as string,
       price: Number(data.get("price")),
-      category: data.get("category"),
-      section: data.get("section"),
-      image: data.get("image"),
-      description: data.get("description"),
+      category: data.get("category") as string,
+      section: data.get("section") as string,
+      image: data.get("image") as string,
+      description: data.get("description") as string,
       inStock: Boolean(data.get("inStock")),
     })
 
