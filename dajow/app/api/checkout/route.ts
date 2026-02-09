@@ -1,46 +1,53 @@
+import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
-import { NextResponse } from "next/server"
-import { products } from "@/data/products"
-import { convertFromGBP } from "@/lib/convert"
-import { resolveCurrency } from "@/lib/currency"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2023-10-16",
+  apiVersion: "2024-11-20.acacia",
 })
 
-export async function POST(req: Request) {
-  const { items, country } = await req.json()
+export async function POST(req: NextRequest) {
+  try {
+    const { items, orderId, customerEmail } = await req.json()
 
-  const currency = resolveCurrency(country)
+    if (!items || items.length === 0) {
+      return NextResponse.json(
+        { error: "No items in cart" },
+        { status: 400 }
+      )
+    }
 
-  const line_items = await Promise.all(
-    items.map(async (item: any) => {
-      const product = products.find(p => p.id === item.id)
-      if (!product) throw new Error("Product not found")
-
-      const price = await convertFromGBP(product.price, currency)
-
-      return {
-        price_data: {
-          currency,
-          product_data: {
-            name: product.name,
-            images: [product.image],
-          },
-          unit_amount: Math.round(price * 100),
+    // Create line items for Stripe
+    const lineItems = items.map((item: any) => ({
+      price_data: {
+        currency: "usd", // US Dollars
+        product_data: {
+          name: item.name,
+          images: item.image ? [item.image] : [],
         },
-        quantity: item.quantity,
-      }
+        unit_amount: Math.round(item.price * 100), // Convert to cents
+      },
+      quantity: item.quantity,
+    }))
+
+    // Create Stripe checkout session
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      line_items: lineItems,
+      mode: "payment",
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/orders/${orderId}?success=true`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/cart?canceled=true`,
+      customer_email: customerEmail,
+      metadata: {
+        orderId: orderId,
+      },
     })
-  )
 
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    line_items,
-    payment_method_types: ["card"],
-    success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/success`,
-    cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/cart`,
-  })
-
-  return NextResponse.json({ url: session.url })
+    return NextResponse.json({ sessionId: session.id })
+  } catch (error: any) {
+    console.error("Stripe error:", error)
+    return NextResponse.json(
+      { error: error.message },
+      { status: 500 }
+    )
+  }
 }
