@@ -14,6 +14,14 @@ interface BulkProduct {
   inStock: boolean
 }
 
+// Helper function to generate slug from product name
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
 export default function BulkUploadPage() {
   const router = useRouter()
   const [uploading, setUploading] = useState(false)
@@ -71,6 +79,7 @@ export default function BulkUploadPage() {
 
           await addProduct({
             name: product.name,
+            slug: generateSlug(product.name),
             price: Number(product.price),
             category: product.category,
             section: product.section,
