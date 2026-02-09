@@ -95,9 +95,10 @@ export default function CartPage() {
     setLoading(true)
 
     try {
-      // Create order in Firestore
-      const shippingAddress = `${shippingDetails.address}, ${shippingDetails.city}, ${shippingDetails.state} ${shippingDetails.postalCode}`
+      // String version for WhatsApp message
+      const shippingAddressString = `${shippingDetails.address}, ${shippingDetails.city}, ${shippingDetails.state} ${shippingDetails.postalCode}`
       
+      // Create order in Firestore
       const orderId = await createOrder({
         userId: user.uid,
         items: items.map(item => ({
@@ -108,7 +109,12 @@ export default function CartPage() {
           quantity: item.quantity
         })),
         total,
-        shippingAddress,
+        shippingAddress: {
+          name: shippingDetails.fullName,
+          phone: shippingDetails.phone,
+          address: shippingDetails.address,
+          city: shippingDetails.city,
+        },
         paymentMethod: paymentMethod.toUpperCase()
       })
 
@@ -139,7 +145,7 @@ export default function CartPage() {
           `Name: ${shippingDetails.fullName}\n` +
           `Phone: ${shippingDetails.phone}\n` +
           `Email: ${shippingDetails.email}\n\n` +
-          `📦 *Shipping Address:*\n${shippingAddress}\n\n` +
+          `📦 *Shipping Address:*\n${shippingAddressString}\n\n` +
           `🛍️ *Order Items:*\n` +
           items.map(item => 
             `• ${item.name}\n  Qty: ${item.quantity} × ₦${item.price.toLocaleString()} = ₦${(item.price * item.quantity).toLocaleString()}`
