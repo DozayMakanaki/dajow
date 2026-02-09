@@ -2,9 +2,17 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { createProduct } from "@/lib/firestore-products"
+import { addProduct } from "@/lib/firestore-products"
 import { uploadImage } from "@/lib/upload-image"
 import Image from "next/image"
+
+// Helper function to generate slug from product name
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
 
 export default function NewProductPage() {
   const router = useRouter()
@@ -34,8 +42,11 @@ export default function NewProductPage() {
     const form = e.currentTarget
     const data = new FormData(form)
 
+    const name = data.get("name") as string
+
     const productData = {
-      name: data.get("name") as string,
+      name,
+      slug: generateSlug(name),
       price: Number(data.get("price")),
       category: data.get("category") as string,
       section: data.get("section") as string,
