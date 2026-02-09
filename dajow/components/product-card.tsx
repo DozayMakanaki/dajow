@@ -22,7 +22,7 @@ export default function AddToCartButton({ product }: Props) {
   const addItem = useCartStore((state) => state.addItem)
 
   const handleAdd = () => {
-    addItem(product)
+    addItem({ ...product, quantity: 1 })
     console.log("Add to cart:", product.id)
   }
 
