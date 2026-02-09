@@ -36,6 +36,7 @@ const ADMIN_EMAILS = [
   "chidoziemail@gmail.com",
   "aloziemaureen89@yahoo.com",
   "Aloziemaureen89@yahoo.com",
+  "aloziemartinso50@gmail.com",
   "emmaphilamong2@gmail.com"
    
   
