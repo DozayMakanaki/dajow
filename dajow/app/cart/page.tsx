@@ -101,6 +101,7 @@ export default function CartPage() {
       const orderId = await createOrder({
         userId: user.uid,
         items: items.map(item => ({
+          productId: item.id,
           name: item.name,
           price: item.price,
           image: item.image,
