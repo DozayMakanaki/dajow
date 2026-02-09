@@ -25,7 +25,7 @@ export default function AuthProvider({
       setLoading(false)
 
       // reset cart when user changes
-      useCartStore.getState().resetForUser()
+      useCartStore.getState().clearCart()
     })
 
     return () => unsubscribe()
