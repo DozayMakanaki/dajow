@@ -17,7 +17,10 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1)
 
   useEffect(() => {
-    getProductById(params.id)
+    const id = params.id as string
+    if (!id) return
+    
+    getProductById(id)
       .then(setProduct)
       .finally(() => setLoading(false))
   }, [params.id])

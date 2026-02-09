@@ -34,6 +34,9 @@ const ADMIN_EMAILS = [
   "admin@dajow.com",
   "owner@dajow.com",
   "chidoziemail@gmail.com",
+  "Aloziemaureen89@yahoo.com",
+  "emmaphilamong2@gmail.com"
+   
   
   // Add your admin emails here
 ]
