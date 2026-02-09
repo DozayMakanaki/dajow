@@ -159,7 +159,7 @@ if (paymentMethod === "stripe") {
           `Payment: Cash on Delivery`
         )
 
-        const phone = "2348012345678" // ← REPLACE WITH YOUR WHATSAPP NUMBER
+        const phone = "2348146714124" // ← REPLACE WITH YOUR WHATSAPP NUMBER
         window.location.href = `https://wa.me/${phone}?text=${message}`
         
         // Clear cart after sending to WhatsApp
