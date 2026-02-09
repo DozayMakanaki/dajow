@@ -118,7 +118,8 @@ export default function Navbar() {
     setSearch("")
   }
 
-  function handleSuggestionClick(productId: string) {
+  function handleSuggestionClick(productId: string | undefined) {
+    if (!productId) return
     setShowSuggestions(false)
     setSearch("")
     router.push(`/products/${productId}`)
