@@ -18,6 +18,8 @@ export function useUserRole() {
     }
 
     async function fetchRole() {
+      if (!user) return // Add this guard
+      
       try {
         const snap = await getDoc(doc(db, "users", user.uid))
 
