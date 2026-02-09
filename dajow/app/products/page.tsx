@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { motion, AnimatePresence } from "framer-motion"
-import { getProducts } from "@/lib/firestore-products"
+import { getProducts, type Product } from "@/lib/products"
 import { Filter, X, Grid3x3, LayoutGrid, ChevronRight, TrendingUp, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -16,12 +15,13 @@ import {
 } from "@/components/ui/sheet"
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState([])
-  const [category, setCategory] = useState(null)
-  const [section, setSection] = useState(null)
+  // ✅ Fix: Correct state types
+  const [products, setProducts] = useState<Product[]>([])
+  const [category, setCategory] = useState<string | null>(null)
+  const [section, setSection] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [sortBy, setSortBy] = useState("featured")
-  const [viewMode, setViewMode] = useState("grid")
+  const [sortBy, setSortBy] = useState<"featured" | "price-low" | "price-high" | "name">("featured")
+  const [viewMode, setViewMode] = useState<"grid" | "compact">("grid")
   const [searchQuery, setSearchQuery] = useState("")
 
   useEffect(() => {
@@ -42,7 +42,7 @@ export default function ProductsPage() {
   }
 
   const categories = [...new Set(products.map(p => p.category))]
-  const sections = [...new Set(products.map(p => p.section).filter(Boolean))]
+  const sections = [...new Set(products.map(p => p.section).filter(Boolean))] as string[]
 
   // Filter products
   let filtered = products.filter(p => {
@@ -145,7 +145,7 @@ export default function ProductsPage() {
             {/* Sort Dropdown - Mobile Friendly */}
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
+              onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
               className="flex-1 md:flex-none px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
             >
               <option value="featured">Featured</option>
@@ -171,7 +171,7 @@ export default function ProductsPage() {
             </div>
           </div>
 
-          {/* Active Filter Chips - Mobile Scrollable */}
+          {/* Active Filter Chips */}
           {activeFiltersCount > 0 && (
             <div className="flex items-center gap-2 mt-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
               {category && (
@@ -281,9 +281,7 @@ export default function ProductsPage() {
             <div className="bg-gradient-to-br from-orange-600 to-orange-500 rounded-xl p-5 text-white">
               <TrendingUp className="h-7 w-7 mb-2" />
               <h4 className="font-bold text-sm mb-1">Hot Deals!</h4>
-              <p className="text-xs text-orange-100 mb-3">
-                Up to 30% off
-              </p>
+              <p className="text-xs text-orange-100 mb-3">Up to 30% off</p>
               <Link href="/deals" className="text-xs font-semibold underline">
                 Shop Now →
               </Link>
@@ -334,7 +332,6 @@ export default function ProductsPage() {
                           unoptimized={!imageUrl.startsWith('http')}
                         />
                         
-                        {/* Desktop Quick View */}
                         <div className="hidden md:flex absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 items-center justify-center">
                           <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                             <div className="bg-white px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1">
@@ -343,12 +340,6 @@ export default function ProductsPage() {
                             </div>
                           </div>
                         </div>
-
-                        {!product.inStock && (
-                          <div className="absolute top-2 right-2 bg-red-500 text-white text-[10px] md:text-xs px-2 py-0.5 md:px-3 md:py-1 rounded-full font-semibold">
-                            Out of Stock
-                          </div>
-                        )}
                       </div>
 
                       <div className="p-2.5 md:p-4 space-y-1 md:space-y-2">
@@ -375,7 +366,6 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* Add scrollbar hide styles */}
       <style jsx global>{`
         .scrollbar-hide::-webkit-scrollbar {
           display: none;
@@ -389,7 +379,16 @@ export default function ProductsPage() {
   )
 }
 
-// Mobile Filters Component
+interface MobileFiltersProps {
+  categories: string[]
+  sections: string[]
+  category: string | null
+  section: string | null
+  setCategory: (cat: string | null) => void
+  setSection: (sec: string | null) => void
+  clearFilters: () => void
+}
+
 function MobileFilters({ 
   categories, 
   sections, 
@@ -398,11 +397,9 @@ function MobileFilters({
   setCategory, 
   setSection, 
   clearFilters 
-}) {
+}: MobileFiltersProps) {
   return (
     <div className="space-y-6">
-      
-      {/* Categories */}
       <div>
         <h3 className="font-semibold mb-3 text-orange-600 text-sm">Categories</h3>
         <div className="space-y-2">
@@ -422,7 +419,6 @@ function MobileFilters({
         </div>
       </div>
 
-      {/* Sections */}
       {sections.length > 0 && (
         <div>
           <h3 className="font-semibold mb-3 text-orange-600 text-sm">Sections</h3>
@@ -444,7 +440,6 @@ function MobileFilters({
         </div>
       )}
 
-      {/* Clear */}
       {(category || section) && (
         <Button
           onClick={clearFilters}
