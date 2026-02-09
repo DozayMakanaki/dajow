@@ -56,7 +56,7 @@ export default function Navbar() {
   const [suggestions, setSuggestions] = useState<Product[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [allProducts, setAllProducts] = useState<Product[]>([])
-  const searchRef = useRef(null)
+  const searchRef = useRef<HTMLDivElement>(null)
 
   // Check if user is authorized admin
   const isAuthorizedAdmin = user && ADMIN_EMAILS.includes(user.email || "")
@@ -102,7 +102,7 @@ export default function Navbar() {
   // Close suggestions when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (searchRef.current && !searchRef.current.contains(event.target)) {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setShowSuggestions(false)
       }
     }
