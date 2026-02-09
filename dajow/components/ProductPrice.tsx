@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { formatPrice } from "@/lib/formatPrice"
+import { formatLivePrice } from "@/lib/format-live-price"
 
 export default function ProductPrice({ usdPrice }: { usdPrice: number }) {
   const [price, setPrice] = useState<string>("Loading...")
@@ -15,7 +15,7 @@ export default function ProductPrice({ usdPrice }: { usdPrice: number }) {
         const currency = geo.currency || "USD"
 
         if (currency === "USD") {
-          setPrice(formatPrice(usdPrice, "USD"))
+          setPrice(formatLivePrice(usdPrice, { USD: 1 }))
           return
         }
 
@@ -24,9 +24,9 @@ export default function ProductPrice({ usdPrice }: { usdPrice: number }) {
         )
         const fx = await fxRes.json()
 
-        setPrice(formatPrice(fx.result, currency))
+        setPrice(formatLivePrice(fx.result, { [currency]: 1 }))
       } catch {
-        setPrice(formatPrice(usdPrice, "USD"))
+        setPrice(formatLivePrice(usdPrice, { USD: 1 }))
       }
     }
 
