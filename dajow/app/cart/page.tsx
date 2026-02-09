@@ -101,6 +101,7 @@ export default function CartPage() {
       // Create order in Firestore
       const orderId = await createOrder({
         userId: user.uid,
+        email: shippingDetails.email,
         items: items.map(item => ({
           productId: item.id,
           name: item.name,
@@ -115,7 +116,6 @@ export default function CartPage() {
           address: shippingDetails.address,
           city: shippingDetails.city,
         },
-        paymentMethod: paymentMethod.toUpperCase()
       })
 
       // 🔹 STRIPE PAYMENT

@@ -26,7 +26,7 @@ export async function createOrder({
     city: string
   }
 }) {
-  await addDoc(collection(db, "orders"), {
+  const docRef = await addDoc(collection(db, "orders"), {
     userId,
     email,
     items,
@@ -36,4 +36,6 @@ export async function createOrder({
     createdAt: serverTimestamp(),
     shippingAddress,
   })
+  
+  return docRef.id  // Return the order ID
 }
