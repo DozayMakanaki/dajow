@@ -91,7 +91,7 @@ export default function SignupPage() {
         </Button>
 
         <div className="text-center text-sm text-muted-foreground">
-          OR
+          or
         </div>
 
         <Input
