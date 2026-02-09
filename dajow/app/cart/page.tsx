@@ -119,23 +119,24 @@ export default function CartPage() {
       })
 
       // 🔹 STRIPE PAYMENT
-      if (paymentMethod === "stripe") {
-        const res = await fetch("/api/checkout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            items,
-            orderId,
-            customerEmail: shippingDetails.email
-          }),
-        })
+// 🔹 STRIPE PAYMENT
+if (paymentMethod === "stripe") {
+  const res = await fetch("/api/checkout", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ 
+      items,
+      orderId,
+      customerEmail: shippingDetails.email
+    }),
+  })
 
-        const { sessionId } = await res.json()
-        const stripe = await stripePromise
-
-        await stripe?.redirectToCheckout({ sessionId })
-        return
-      }
+  const { url } = await res.json()
+  
+  // Redirect to Stripe checkout URL
+  window.location.href = url
+  return
+}
 
       // 🔹 WHATSAPP ORDER
       if (paymentMethod === "whatsapp") {
