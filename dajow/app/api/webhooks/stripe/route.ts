@@ -3,7 +3,7 @@ import Stripe from "stripe"
 import { getProductById } from "@/lib/firestore-products"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-11-20.acacia",
+ apiVersion: "2025-12-15.clover",
 })
 
 export async function POST(req: NextRequest) {
