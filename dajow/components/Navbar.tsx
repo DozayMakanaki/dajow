@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input"
 import { useCartStore } from "@/store/cart-store"
 import UserMenu from "@/components/user-menu"
 import { useUserRole } from "@/hooks/use-user-role"
-import { getProducts } from "@/lib/firestore-products"
+import { getProducts, Product } from "@/lib/firestore-products"
 
 const categories = [
   { name: "African Foodstuff", slug: "african-foodstuff", icon: "🌾" },
@@ -53,9 +53,9 @@ export default function Navbar() {
   const [categoriesOpen, setCategoriesOpen] = useState(false)
   
   // Search suggestions
-  const [suggestions, setSuggestions] = useState([])
+  const [suggestions, setSuggestions] = useState<Product[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
-  const [allProducts, setAllProducts] = useState([])
+  const [allProducts, setAllProducts] = useState<Product[]>([])
   const searchRef = useRef(null)
 
   // Check if user is authorized admin
