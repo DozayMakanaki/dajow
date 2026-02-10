@@ -324,7 +324,7 @@ export default function CategorySections() {
                                   {product.name}
                                 </h4>
                                 <p className="text-lg font-bold text-orange-600 mt-2">
-                                  ₦{product.price.toLocaleString()}
+                                  £{product.price.toLocaleString()}
                                 </p>
                               </div>
                             </Link>
