@@ -1,21 +1,29 @@
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage"
-import { app } from "./firebase"
-
-const storage = getStorage(app)
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage"
+import { storage } from "@/lib/firebase"
 
 export async function uploadImage(file: File): Promise<string> {
-  // Create a unique filename
   const timestamp = Date.now()
-  const filename = `products/${timestamp}-${file.name}`
+  const filename = `products/${timestamp}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`
   
-  // Create a reference to the file location
   const storageRef = ref(storage, filename)
-  
-  // Upload the file
-  await uploadBytes(storageRef, file)
-  
-  // Get the download URL
-  const downloadURL = await getDownloadURL(storageRef)
-  
-  return downloadURL
+  const uploadTask = uploadBytesResumable(storageRef, file)
+
+  return new Promise((resolve, reject) => {
+    uploadTask.on(
+      'state_changed',
+      (snapshot) => {
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+        console.log('Upload is ' + progress + '% done')
+      },
+      (error) => {
+        console.error("Upload error:", error)
+        reject(error)
+      },
+      async () => {
+        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref)
+        console.log('File available at', downloadURL)
+        resolve(downloadURL)
+      }
+    )
+  })
 }

@@ -13,10 +13,15 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
 }
 
-/** ✅ IMPORTANT: export app */
-export const app =
-  getApps().length === 0 ? initializeApp(firebaseConfig) : getApp()
+// Initialize app only if not already initialized
+let app
+if (typeof window !== 'undefined') {
+  app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
+} else {
+  app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
+}
 
+export { app }
 export const auth = getAuth(app)
 export const db = getFirestore(app)
 export const googleProvider = new GoogleAuthProvider()  
