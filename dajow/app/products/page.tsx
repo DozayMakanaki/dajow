@@ -354,7 +354,7 @@ export default function ProductsPage() {
                         )}
 
                         <p className="font-bold text-orange-600 text-sm md:text-lg">
-                          ₦{product.price?.toLocaleString() || '0'}
+                          £{product.price?.toLocaleString() || '0'}
                         </p>
                       </div>
                     </Link>
