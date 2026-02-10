@@ -346,7 +346,7 @@ export default function CategorySections() {
               href={`/products?category=${category.slug}`}
               className="md:hidden flex items-center justify-center gap-2 bg-gradient-to-r from-orange-600 to-orange-500 text-white font-bold py-4 rounded-2xl hover:shadow-lg transition-all mt-8"
             >
-              View All {category.name}
+              View All. {category.name}
               <ArrowRight className="h-5 w-5" />
             </Link>
 
