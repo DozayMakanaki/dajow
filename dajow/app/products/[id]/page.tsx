@@ -155,7 +155,7 @@ export default function ProductDetailPage() {
             {/* Price */}
             <div className="space-y-2">
               <p className="text-4xl md:text-5xl font-black text-orange-600">
-                ₦{product.price.toLocaleString()}
+                £{product.price.toLocaleString()}
               </p>
               <p className="text-sm text-gray-500">Tax included. Shipping calculated at checkout.</p>
             </div>
