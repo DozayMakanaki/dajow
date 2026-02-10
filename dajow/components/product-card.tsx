@@ -51,7 +51,7 @@ export default function AddToCartButton({ product }: Props) {
             {product.name}
           </p>
           <p className="text-sm font-bold text-orange-600">
-            ₦{product.price.toLocaleString()}
+            £{product.price.toLocaleString()}
           </p>
         </div>
 
