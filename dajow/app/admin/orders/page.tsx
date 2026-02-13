@@ -53,7 +53,7 @@ export default function OrdersPage() {
                 #{o.id.slice(0, 6)}
               </td>
 
-              <td>₦{Number(o.total).toLocaleString()}</td>
+              <td>£{Number(o.total).toLocaleString()}</td>
 
               <td>
                 <select

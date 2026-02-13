@@ -31,8 +31,8 @@ export default function AdminDashboard() {
   useEffect(() => {
     Promise.all([
       getDashboardStats(),
-      getOrders(50), // Get last 50 orders
-      getRevenueByDate(30) // Get revenue for last 30 days
+      getOrders(50),
+      getRevenueByDate(30)
     ]).then(([statsData, ordersData, revenueChartData]) => {
       setStats(statsData)
       setOrders(ordersData)
@@ -44,7 +44,6 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="space-y-6">
-        {/* Skeleton Stats */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-6">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div key={i} className="bg-white p-4 md:p-5 rounded-xl shadow animate-pulse">
@@ -53,7 +52,6 @@ export default function AdminDashboard() {
             </div>
           ))}
         </div>
-        {/* Skeleton Chart */}
         <div className="bg-white p-4 md:p-6 rounded-xl shadow animate-pulse">
           <div className="h-6 bg-gray-200 rounded w-1/4 mb-4" />
           <div className="h-64 bg-gray-100 rounded" />
@@ -64,17 +62,13 @@ export default function AdminDashboard() {
 
   if (!stats) return null
 
-  // Calculate revenue change (compare last 7 days vs previous 7 days)
   const last7Days = revenueData.slice(-7)
   const previous7Days = revenueData.slice(-14, -7)
-  
   const last7DaysRevenue = last7Days.reduce((sum, item) => sum + item.revenue, 0)
   const previous7DaysRevenue = previous7Days.reduce((sum, item) => sum + item.revenue, 0)
-  
-  const revenueChange = previous7DaysRevenue > 0 
+  const revenueChange = previous7DaysRevenue > 0
     ? ((last7DaysRevenue - previous7DaysRevenue) / previous7DaysRevenue * 100).toFixed(1)
     : 0
-
   const isRevenueUp = Number(revenueChange) >= 0
 
   const statItems = [
@@ -88,7 +82,7 @@ export default function AdminDashboard() {
     },
     {
       title: "Total Revenue",
-      value: `₦${stats.totalRevenue.toLocaleString()}`,
+      value: `£${stats.totalRevenue.toLocaleString()}`,
       icon: DollarSign,
       bgColor: "bg-green-50",
       textColor: "text-green-600",
@@ -129,12 +123,11 @@ export default function AdminDashboard() {
     },
   ]
 
-  // Prepare chart data - show only last 14 days for clarity
   const chartData = revenueData.slice(-14)
 
   return (
     <div className="space-y-6 md:space-y-8">
-      
+
       {/* Page Header */}
       <div className="mb-6">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
@@ -198,37 +191,38 @@ export default function AdminDashboard() {
             )}
           </div>
         </div>
-        
-        {/* Chart */}
+
         <div className="w-full overflow-x-auto">
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300} minWidth={300}>
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis 
-                  dataKey="date" 
+                <XAxis
+                  dataKey="date"
                   tick={{ fontSize: 12 }}
                   angle={-45}
                   textAnchor="end"
                   height={80}
                 />
-                <YAxis 
+                <YAxis
                   tick={{ fontSize: 12 }}
-                  tickFormatter={(value) => value >= 1000 ? `₦${(value / 1000).toFixed(0)}k` : `₦${value}`}
+                  tickFormatter={(value) =>
+                    value >= 1000 ? `£${(value / 1000).toFixed(0)}k` : `£${value}`
+                  }
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: 'white',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '12px',
-                    fontSize: '14px',
-                    padding: '12px'
+                    backgroundColor: "white",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "12px",
+                    fontSize: "14px",
+                    padding: "12px",
                   }}
-                  formatter={(value: any) => [`₦${value.toLocaleString()}`, 'Revenue']}
-                  labelStyle={{ fontWeight: 'bold', marginBottom: '8px' }}
+                  formatter={(value: any) => [`£${value.toLocaleString()}`, "Revenue"]}
+                  labelStyle={{ fontWeight: "bold", marginBottom: "8px" }}
                 />
-                <Bar 
-                  dataKey="revenue" 
+                <Bar
+                  dataKey="revenue"
                   fill="#ea580c"
                   radius={[8, 8, 0, 0]}
                 />
@@ -251,19 +245,19 @@ export default function AdminDashboard() {
             <div>
               <p className="text-xs text-gray-500 mb-1">Total Revenue</p>
               <p className="text-lg font-bold text-gray-900">
-                ₦{revenueData.reduce((sum, item) => sum + item.revenue, 0).toLocaleString()}
+                £{revenueData.reduce((sum, item) => sum + item.revenue, 0).toLocaleString()}
               </p>
             </div>
             <div>
               <p className="text-xs text-gray-500 mb-1">Average Daily</p>
               <p className="text-lg font-bold text-gray-900">
-                ₦{Math.round(revenueData.reduce((sum, item) => sum + item.revenue, 0) / revenueData.length).toLocaleString()}
+                £{Math.round(revenueData.reduce((sum, item) => sum + item.revenue, 0) / revenueData.length).toLocaleString()}
               </p>
             </div>
             <div>
               <p className="text-xs text-gray-500 mb-1">Highest Day</p>
               <p className="text-lg font-bold text-gray-900">
-                ₦{Math.max(...revenueData.map(item => item.revenue)).toLocaleString()}
+                £{Math.max(...revenueData.map((item) => item.revenue)).toLocaleString()}
               </p>
             </div>
           </div>
@@ -281,23 +275,17 @@ export default function AdminDashboard() {
           </div>
           <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200">
             <CheckCircle className="h-8 w-8 text-green-600 mx-auto mb-2" />
-            <p className="text-2xl md:text-3xl font-bold text-green-600">
-              {stats.deliveredOrders}
-            </p>
+            <p className="text-2xl md:text-3xl font-bold text-green-600">{stats.deliveredOrders}</p>
             <p className="text-xs md:text-sm text-gray-600 mt-1 font-medium">Delivered</p>
           </div>
           <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
             <TrendingUp className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-            <p className="text-2xl md:text-3xl font-bold text-blue-600">
-              {stats.processingOrders}
-            </p>
+            <p className="text-2xl md:text-3xl font-bold text-blue-600">{stats.processingOrders}</p>
             <p className="text-xs md:text-sm text-gray-600 mt-1 font-medium">Processing</p>
           </div>
           <div className="text-center p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl border border-yellow-200">
             <Clock className="h-8 w-8 text-yellow-600 mx-auto mb-2" />
-            <p className="text-2xl md:text-3xl font-bold text-yellow-600">
-              {stats.pendingOrders}
-            </p>
+            <p className="text-2xl md:text-3xl font-bold text-yellow-600">{stats.pendingOrders}</p>
             <p className="text-xs md:text-sm text-gray-600 mt-1 font-medium">Pending</p>
           </div>
         </div>
@@ -306,15 +294,15 @@ export default function AdminDashboard() {
   )
 }
 
-function Stat({ 
-  title, 
-  value, 
+function Stat({
+  title,
+  value,
   icon: Icon,
   bgColor,
   textColor,
   change,
-  changePositive
-}: { 
+  changePositive,
+}: {
   title: string
   value: string | number
   icon: any
@@ -330,10 +318,8 @@ function Stat({
           <Icon className={`h-4 w-4 md:h-5 md:w-5 ${textColor}`} />
         </div>
         {change !== null && change !== undefined && (
-          <div className={`text-xs font-semibold ${
-            changePositive ? 'text-green-600' : 'text-red-600'
-          }`}>
-            {changePositive ? '+' : ''}{change}%
+          <div className={`text-xs font-semibold ${changePositive ? "text-green-600" : "text-red-600"}`}>
+            {changePositive ? "+" : ""}{change}%
           </div>
         )}
       </div>

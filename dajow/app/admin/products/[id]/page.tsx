@@ -3,20 +3,18 @@
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { getProductById, updateProduct } from "@/lib/firestore-products"
-import { uploadImage } from "@/lib/upload-image"
 import Image from "next/image"
-import { Upload, X, Save, ArrowLeft, Loader2 } from "lucide-react"
+import { Save, ArrowLeft, Loader2, Link as LinkIcon, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 
-// Helper function to generate slug from product name
 function generateSlug(name: string): string {
   return name
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
 }
 
 export default function EditProductPage() {
@@ -27,83 +25,48 @@ export default function EditProductPage() {
   const [product, setProduct] = useState<any | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  
-  // Image handling
-  const [imagePreview, setImagePreview] = useState<string>("")
-  const [newImageFile, setNewImageFile] = useState<File | null>(null)
-  const [imageUrl, setImageUrl] = useState<string>("")
+
+  // Image URL state
+  const [imageUrl, setImageUrl] = useState("")
+  const [imageUrlInput, setImageUrlInput] = useState("")
+  const [imageError, setImageError] = useState(false)
 
   useEffect(() => {
     if (!id) return
-
     getProductById(id)
-      .then(data => {
+      .then((data) => {
         if (!data) {
           router.replace("/admin/products")
           return
         }
         setProduct(data)
         setImageUrl(data.image || "")
-        setImagePreview(data.image || "")
+        setImageUrlInput(data.image || "")
       })
       .finally(() => setLoading(false))
   }, [id, router])
 
-  async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    // Validate file type
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
-    if (!validTypes.includes(file.type)) {
-      alert("Please upload a valid image file (JPG, PNG, WEBP, or GIF)")
-      return
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Image size should be less than 5MB")
-      return
-    }
-
-    setNewImageFile(file)
-    setImagePreview(URL.createObjectURL(file))
+  // Apply the typed URL as the live preview
+  function handleUrlInput(val: string) {
+    setImageUrlInput(val)
+    setImageError(false)
+    setImageUrl(val)
   }
 
-  function removeImage() {
-    setNewImageFile(null)
-    setImagePreview(product?.image || "")
-    setImageUrl(product?.image || "")
+  function clearImage() {
+    setImageUrl("")
+    setImageUrlInput("")
+    setImageError(false)
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!product) return
-
     setSaving(true)
 
     try {
       const form = e.currentTarget
       const data = new FormData(form)
-
-      let finalImageUrl = imageUrl
-
-      // Upload new image if selected
-      if (newImageFile) {
-        setUploading(true)
-        try {
-          finalImageUrl = await uploadImage(newImageFile)
-          setImageUrl(finalImageUrl)
-        } catch (error) {
-          alert("Failed to upload image. Please try again.")
-          setSaving(false)
-          setUploading(false)
-          return
-        }
-        setUploading(false)
-      }
-
       const name = data.get("name") as string
 
       await updateProduct(id, {
@@ -112,7 +75,7 @@ export default function EditProductPage() {
         price: Number(data.get("price")),
         category: data.get("category") as string,
         section: data.get("section") as string,
-        image: finalImageUrl || (data.get("imageUrl") as string),
+        image: imageUrl,
         description: data.get("description") as string,
         inStock: data.get("inStock") === "on",
       })
@@ -127,7 +90,6 @@ export default function EditProductPage() {
     }
   }
 
-  /* 🛑 BLOCK RENDERING UNTIL READY */
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -156,11 +118,11 @@ export default function EditProductPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
-        
+
         {/* Header */}
         <div className="mb-8">
-          <Button 
-            onClick={() => router.push("/admin/products")} 
+          <Button
+            onClick={() => router.push("/admin/products")}
             variant="ghost"
             className="mb-4"
           >
@@ -168,14 +130,14 @@ export default function EditProductPage() {
             Back to Products
           </Button>
           <h1 className="text-3xl font-bold text-gray-900">Edit Product</h1>
-          <p className="text-gray-600 mt-2">Update product information and images</p>
+          <p className="text-gray-600 mt-2">Update product information</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          
+
           {/* Main Content Card */}
           <div className="bg-white rounded-xl shadow-sm border p-6 space-y-6">
-            
+
             {/* Product Name */}
             <div>
               <Label htmlFor="name" className="text-sm font-semibold mb-2">
@@ -191,11 +153,11 @@ export default function EditProductPage() {
               />
             </div>
 
-            {/* Price and Category Row */}
+            {/* Price and Category */}
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <Label htmlFor="price" className="text-sm font-semibold mb-2">
-                  Price (₦) *
+                  Price (£) *
                 </Label>
                 <Input
                   id="price"
@@ -203,12 +165,11 @@ export default function EditProductPage() {
                   type="number"
                   step="0.01"
                   defaultValue={product.price}
-                  placeholder="e.g., 5000"
+                  placeholder="e.g., 9.99"
                   className="h-12"
                   required
                 />
               </div>
-
               <div>
                 <Label htmlFor="category" className="text-sm font-semibold mb-2">
                   Category *
@@ -243,8 +204,7 @@ export default function EditProductPage() {
                 <option value="meat">Meat & Poultry</option>
                 <option value="pantry">Pantry</option>
                 <option value="snacks">Snacks</option>
-                 <option value="wigs">Wigs</option>
-                
+                <option value="wigs">Wigs</option>
               </select>
             </div>
 
@@ -263,7 +223,7 @@ export default function EditProductPage() {
               />
             </div>
 
-            {/* In Stock Toggle */}
+            {/* In Stock */}
             <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
               <input
                 type="checkbox"
@@ -278,87 +238,81 @@ export default function EditProductPage() {
             </div>
           </div>
 
-          {/* Image Upload Card */}
-          <div className="bg-white rounded-xl shadow-sm border p-6 space-y-4">
+          {/* Image Card */}
+          <div className="bg-white rounded-xl shadow-sm border p-6 space-y-5">
             <div>
-              <Label className="text-sm font-semibold mb-2">Product Image</Label>
-              <p className="text-sm text-gray-500 mb-4">
-                Upload a new image or keep the current one. Accepted formats: JPG, PNG, WEBP, GIF (Max 5MB)
+              <Label className="text-sm font-semibold">Product Image</Label>
+              <p className="text-sm text-gray-500 mt-1">
+                Paste a direct image URL from any source (Google, Unsplash, your CDN, etc.)
               </p>
             </div>
 
-            {/* Image Preview */}
-            {imagePreview && (
-              <div className="relative w-full max-w-md mx-auto">
-                <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 border-2 border-gray-200">
+            {/* URL Input */}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  value={imageUrlInput}
+                  onChange={(e) => handleUrlInput(e.target.value)}
+                  placeholder="https://example.com/image.jpg"
+                  className="h-12 pl-9 pr-4"
+                />
+              </div>
+              {imageUrl && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={clearImage}
+                  className="h-12 w-12 flex-shrink-0 text-red-500 hover:text-red-600 hover:border-red-300"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+
+            {/* Live preview */}
+            {imageUrl && !imageError && (
+              <div className="rounded-xl overflow-hidden border-2 border-gray-100 bg-gray-50 w-full max-w-xs mx-auto">
+                <div className="relative aspect-square">
                   <Image
-                    src={imagePreview}
+                    src={imageUrl}
                     alt="Product preview"
                     fill
                     className="object-cover"
-                    unoptimized={!imagePreview.startsWith('http')}
+                    unoptimized
+                    onError={() => setImageError(true)}
                   />
                 </div>
-                {newImageFile && (
-                  <button
-                    type="button"
-                    onClick={removeImage}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition shadow-lg"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
+                <p className="text-xs text-center text-gray-400 py-2">Preview</p>
               </div>
             )}
 
-            {/* Upload Button */}
-            <div>
-              <input
-                type="file"
-                accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
-                onChange={handleImageChange}
-                className="hidden"
-                id="image-upload"
-                disabled={uploading || saving}
-              />
-              <label
-                htmlFor="image-upload"
-                className={`flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed rounded-lg cursor-pointer transition ${
-                  uploading || saving
-                    ? "border-gray-300 bg-gray-50 cursor-not-allowed"
-                    : "border-orange-300 hover:border-orange-500 hover:bg-orange-50"
-                }`}
-              >
-                {uploading ? (
-                  <>
-                    <Loader2 className="h-5 w-5 animate-spin text-orange-600" />
-                    <span className="font-medium text-orange-600">Uploading...</span>
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-5 w-5 text-orange-600" />
-                    <span className="font-medium text-orange-600">
-                      {newImageFile ? "Change Image" : "Upload New Image"}
-                    </span>
-                  </>
-                )}
-              </label>
-            </div>
+            {/* Error state */}
+            {imageError && imageUrl && (
+              <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <X className="h-5 w-5 text-red-500 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-red-700">Image URL couldn't load</p>
+                  <p className="text-xs text-red-500 mt-0.5">
+                    Make sure the URL ends in .jpg, .png, .webp or is a direct image link
+                  </p>
+                </div>
+              </div>
+            )}
 
-            {/* Alternative: Image URL */}
-            <div className="pt-4 border-t">
-              <Label htmlFor="imageUrl" className="text-sm font-semibold mb-2">
-                Or paste image URL
-              </Label>
-              <Input
-                id="imageUrl"
-                name="imageUrl"
-                type="url"
-                defaultValue={product.image}
-                placeholder="https://example.com/image.jpg"
-                className="h-12"
-                disabled={!!newImageFile}
-              />
+            {/* Tips */}
+            <div className="bg-orange-50 border border-orange-100 rounded-lg p-4">
+              <p className="text-xs font-semibold text-orange-800 mb-2">💡 Where to get image URLs:</p>
+              <ul className="text-xs text-orange-700 space-y-1">
+
+                  <li>• <strong>Imgur.com</strong> → upload your own, copy the direct link</li>
+                <li>• <strong>Google Images</strong> → right-click image → "Copy image address"</li>
+
+
+                
+                <li>• <strong>Firebase Storage</strong> → upload manually, copy the download URL</li>
+              </ul>
             </div>
           </div>
 
@@ -369,14 +323,14 @@ export default function EditProductPage() {
               variant="outline"
               onClick={() => router.push("/admin/products")}
               className="flex-1 h-12"
-              disabled={saving || uploading}
+              disabled={saving}
             >
               Cancel
             </Button>
             <Button
               type="submit"
               className="flex-1 h-12 bg-orange-600 hover:bg-orange-700"
-              disabled={saving || uploading}
+              disabled={saving}
             >
               {saving ? (
                 <>

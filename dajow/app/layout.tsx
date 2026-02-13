@@ -1,11 +1,9 @@
 import "./globals.css"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
-import Navbar from "@/components/Navbar"
 import AuthProvider from "@/providers/auth-provider"
 import { Toaster } from "@/components/ui/toaster"
-import SiteFooter from "@/components/site-footer"
-import BackgroundEffects from "@/components/background-effects"
+import ShellWrapper from "@/components/ShellWrapper"
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -34,22 +32,9 @@ export default function RootLayout({
     <html lang="en" className={inter.variable}>
       <body className="min-h-screen bg-gradient-to-b from-white via-orange-50/20 to-white antialiased">
         <AuthProvider>
-          {/* Navbar */}
-          <Navbar />
-          
-          {/* Main Content */}
-          <main className="relative min-h-screen">
-            {/* Background Decoration */}
-            <BackgroundEffects />
-
-            {/* Content */}
+          <ShellWrapper>
             {children}
-          </main>
-
-          {/* Footer */}
-          <SiteFooter />
-
-          {/* Toast Notifications */}
+          </ShellWrapper>
           <Toaster />
         </AuthProvider>
       </body>
