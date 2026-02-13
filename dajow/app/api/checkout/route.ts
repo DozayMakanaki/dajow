@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  
+ 
 })
 
 export async function POST(req: NextRequest) {
@@ -25,7 +25,6 @@ export async function POST(req: NextRequest) {
           currency: "gbp",
           product_data: {
             name: item.name,
-            images: item.image ? [item.image] : [],
           },
           unit_amount: Math.round(item.price * 100),
         },
