@@ -134,7 +134,7 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
           <p className="flex items-center gap-2">
             <Sparkles className="h-3 w-3" />
-            Free delivery on orders over ₦50,000
+            fast delivery on all purchases
           </p>
           <div className="hidden md:flex items-center gap-4">
             <Link href="/track-order" className="hover:underline">Track Order</Link>
