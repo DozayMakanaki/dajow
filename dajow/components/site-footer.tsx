@@ -38,9 +38,7 @@ export default function SiteFooter() {
                   <Link
                     key={i}
                     href="#"
-                    className="rounded-full border p-3 text-gray-600
-                      hover:bg-orange-50 hover:text-orange-600
-                      transition"
+                    className="rounded-full border p-3 text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition"
                   >
                     <Icon className="h-5 w-5" />
                   </Link>
@@ -50,9 +48,7 @@ export default function SiteFooter() {
 
             {/* SHOP */}
             <div>
-              <h4 className="mb-5 text-xs font-bold uppercase tracking-widest text-gray-900">
-                Shop
-              </h4>
+              <h4 className="mb-5 text-xs font-bold uppercase tracking-widest text-gray-900">Shop</h4>
               <ul className="space-y-3 text-sm text-gray-600">
                 <li><Link href="/products" className="hover:text-orange-600">All Products</Link></li>
                 <li><Link href="/categories" className="hover:text-orange-600">Categories</Link></li>
@@ -63,9 +59,7 @@ export default function SiteFooter() {
 
             {/* SUPPORT */}
             <div>
-              <h4 className="mb-5 text-xs font-bold uppercase tracking-widest text-gray-900">
-                Support
-              </h4>
+              <h4 className="mb-5 text-xs font-bold uppercase tracking-widest text-gray-900">Support</h4>
               <ul className="space-y-3 text-sm text-gray-600">
                 <li><Link href="/contact" className="hover:text-orange-600">Contact Us</Link></li>
                 <li><Link href="/faq" className="hover:text-orange-600">FAQs</Link></li>
@@ -76,35 +70,20 @@ export default function SiteFooter() {
 
             {/* NEWSLETTER */}
             <div>
-              <h4 className="mb-5 text-xs font-bold uppercase tracking-widest text-gray-900">
-                Newsletter
-              </h4>
-
+              <h4 className="mb-5 text-xs font-bold uppercase tracking-widest text-gray-900">Newsletter</h4>
               <p className="mb-4 text-sm text-gray-600">
                 Be the first to hear about new products, deals, and updates.
               </p>
-
-              <form
-                onSubmit={(e) => e.preventDefault()}
-                className="space-y-3"
-              >
+              <form onSubmit={(e) => e.preventDefault()} className="space-y-3">
                 <input
                   type="email"
                   required
                   placeholder="Enter your email"
-                  className="
-                    w-full rounded-2xl border px-4 py-3 text-sm
-                    focus:border-orange-500 focus:outline-none
-                  "
+                  className="w-full rounded-2xl border px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                 />
-
                 <Button
                   type="submit"
-                  className="
-                    w-full rounded-2xl
-                    bg-orange-600 text-white
-                    hover:bg-orange-700
-                  "
+                  className="w-full rounded-2xl bg-orange-600 text-white hover:bg-orange-700"
                 >
                   Subscribe
                 </Button>
@@ -115,7 +94,6 @@ export default function SiteFooter() {
           {/* BOTTOM */}
           <div className="mt-20 flex flex-col gap-4 border-t pt-6 text-center text-sm text-gray-500 sm:flex-row sm:justify-between">
             <p>© {new Date().getFullYear()} Dajow. All rights reserved.</p>
-
             <div className="flex justify-center gap-6">
               <Link href="/privacy" className="hover:text-orange-600">Privacy</Link>
               <Link href="/terms" className="hover:text-orange-600">Terms</Link>
@@ -125,24 +103,52 @@ export default function SiteFooter() {
       </motion.footer>
 
       {/* WHATSAPP FLOATING BUTTON */}
-      <a
-        href="https://wa.me/+447920693240"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="
-          fixed bottom-6 right-6 z-50
-          flex items-center gap-3
-          rounded-full bg-green-500 px-5 py-4
-          text-white shadow-xl
-          hover:bg-green-600 hover:scale-105
-          transition-all
-        "
-      >
-        <MessageCircle className="h-6 w-6" />
-        <span className="hidden sm:inline font-medium">
-          Chat with us
-        </span>
-      </a>
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+
+        {/* Speech bubble tooltip */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8, y: 8 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ delay: 1.2, duration: 0.4, type: "spring" }}
+          className="relative bg-white text-gray-800 text-xs font-medium px-4 py-2.5 rounded-2xl shadow-lg border border-gray-100 max-w-[180px] text-center leading-snug"
+        >
+          💬 Chat with us for more information on products!
+          {/* Arrow pointing down */}
+          <span className="absolute -bottom-2 right-6 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-white drop-shadow-sm" />
+        </motion.div>
+
+        {/* Bouncing button */}
+        <motion.a
+          href="https://wa.me/+447920693240"
+          target="_blank"
+          rel="noopener noreferrer"
+          // Bounce animation: repeating up-down
+          animate={{ y: [0, -10, 0] }}
+          transition={{
+            duration: 1.4,
+            repeat: Infinity,
+            repeatType: "loop",
+            ease: "easeInOut",
+          }}
+          // Scale up on hover, pause bounce feel
+          whileHover={{ scale: 1.1, y: 0 }}
+          whileTap={{ scale: 0.95 }}
+          className="flex items-center gap-3 rounded-full bg-green-500 px-5 py-4 text-white shadow-xl hover:bg-green-600 transition-colors"
+        >
+          {/* Pulsing ring behind button */}
+          <span className="relative flex items-center justify-center">
+            <motion.span
+              animate={{ scale: [1, 1.6, 1], opacity: [0.5, 0, 0.5] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}
+              className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-50"
+            />
+            <MessageCircle className="h-6 w-6 relative z-10" />
+          </span>
+          <span className="hidden sm:inline font-semibold text-sm">
+            Chat with us
+          </span>
+        </motion.a>
+      </div>
     </>
   )
 }
