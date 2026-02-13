@@ -1,60 +1,74 @@
 import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
 
+// Initialize Stripe without apiVersion
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 export async function POST(req: NextRequest) {
   try {
-    const { items, orderId, customerEmail } = await req.json()
+    const body = await req.json()
+    console.log("📦 Checkout request received:", {
+      itemsCount: body.items?.length,
+      hasEmail: !!body.customerEmail,
+      hasOrderId: !!body.orderId
+    })
 
-    console.log("Checkout request:", { items, orderId, customerEmail })
+    const { items, orderId, customerEmail } = body
 
-    if (!items || items.length === 0) {
-      return NextResponse.json({ error: "No items in cart" }, { status: 400 })
+    // Validation
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      console.error("❌ Invalid items:", items)
+      return NextResponse.json(
+        { error: "Cart is empty or invalid" },
+        { status: 400 }
+      )
     }
 
-    if (!customerEmail) {
-      return NextResponse.json({ error: "Customer email is required" }, { status: 400 })
+    if (!customerEmail || !customerEmail.includes("@")) {
+      console.error("❌ Invalid email:", customerEmail)
+      return NextResponse.json(
+        { error: "Valid email address is required" },
+        { status: 400 }
+      )
     }
 
+    // Validate STRIPE_SECRET_KEY exists
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.error("❌ STRIPE_SECRET_KEY not found in environment variables")
+      return NextResponse.json(
+        { error: "Server configuration error" },
+        { status: 500 }
+      )
+    }
+
+    // Create line items
     const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = items.map(
-      (item: { name: string; price: number; image?: string; quantity: number }) => ({
-        price_data: {
-          currency: "gbp",
-          product_data: {
-            name: item.name,
-            images: item.image ? [item.image] : [],
+      (item: any) => {
+        console.log(`📝 Item: ${item.name}, Price: £${item.price}, Qty: ${item.quantity}`)
+        
+        return {
+          price_data: {
+            currency: "gbp",
+            product_data: {
+              name: item.name || "Product",
+              images: item.image ? [item.image] : [],
+            },
+            unit_amount: Math.round(Number(item.price) * 100), // Convert to pence
           },
-          unit_amount: Math.round(item.price * 100),
-        },
-        quantity: item.quantity,
-      })
+          quantity: Number(item.quantity) || 1,
+        }
+      }
     )
 
-    // Calculate subtotal for shipping
-    const subtotal = items.reduce(
-      (sum: number, item: { price: number; quantity: number }) =>
-        sum + item.price * item.quantity,
-      0
-    )
-    const shipping = subtotal > 50000 ? 0 : 2000
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+                    process.env.NEXT_PUBLIC_APP_URL || 
+                    process.env.NEXT_PUBLIC_SITE_URL || 
+                    "http://localhost:3000"
 
-    // Add shipping fee as a line item (if applicable)
-    if (shipping > 0) {
-      lineItems.push({
-        price_data: {
-          currency: "gbp",
-          product_data: {
-            name: "Shipping Fee",
-          },
-          unit_amount: Math.round(shipping * 100),
-        },
-        quantity: 1,
-      })
-    }
+    console.log("🌐 Base URL:", baseUrl)
+    console.log("💳 Creating Stripe session with", lineItems.length, "line items")
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
-
+    // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: lineItems,
@@ -65,27 +79,36 @@ export async function POST(req: NextRequest) {
       },
       success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`,
       cancel_url: `${baseUrl}/cart?cancelled=true`,
-      payment_intent_data: {
-        metadata: {
-          orderId: orderId || "no-order-id",
-        },
-      },
     })
 
-    console.log("✅ Stripe session created:", session.id)
+    console.log("✅ Stripe session created successfully:", session.id)
+    console.log("🔗 Checkout URL:", session.url)
 
-    return NextResponse.json({ url: session.url, sessionId: session.id })
+    return NextResponse.json({ 
+      url: session.url,
+      sessionId: session.id 
+    })
+
   } catch (error: any) {
     console.error("❌ Stripe checkout error:", {
+      name: error?.name,
       message: error?.message,
       type: error?.type,
       code: error?.code,
+      statusCode: error?.statusCode,
+      raw: error
     })
     
+    // Return detailed error for debugging
     return NextResponse.json(
       { 
         error: "Failed to create checkout session",
-        message: error?.message || "Unknown error"
+        message: error?.message || "Unknown error",
+        details: process.env.NODE_ENV === "development" ? {
+          type: error?.type,
+          code: error?.code,
+          statusCode: error?.statusCode
+        } : undefined
       },
       { status: 500 }
     )
