@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
 import { getProductById } from "@/lib/firestore-products"
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
- apiVersion: "2025-12-15.clover",
-})
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,8 +15,8 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Determine currency (default to USD, can add country-based logic later)
-    const currency = country ? resolveCurrency(country) : "usd"
+    // Determine currency (default to GBP based on your preference)
+    const currency = country ? resolveCurrency(country) : "gbp"
 
     // Create line items for Stripe
     // Fetch product data from Firestore to ensure we have correct prices
@@ -44,7 +42,7 @@ export async function POST(req: NextRequest) {
               images: productData.image ? [productData.image] : [],
               description: productData.category || undefined,
             },
-            unit_amount: Math.round(productData.price * 100), // Convert to cents
+            unit_amount: Math.round(productData.price * 100), // Convert to cents/pence
           },
           quantity: item.quantity || 1,
         }
@@ -97,9 +95,9 @@ function resolveCurrency(country: string): string {
     EU: "eur",
     CA: "cad",
     AU: "aud",
-    NG: "usd", // Nigeria - use USD instead of NGN
+    NG: "gbp", // Nigeria - use GBP (changed from USD to match your preference)
     // Add more countries as needed
   }
 
-  return currencyMap[country?.toUpperCase()] || "usd"
+  return currencyMap[country?.toUpperCase()] || "gbp"
 }

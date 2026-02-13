@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
- apiVersion: "2025-12-15.clover",
-})
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -21,7 +19,7 @@ export async function GET(req: NextRequest) {
       status: session.payment_status,
       orderId: session.metadata?.orderId,
       customerEmail: session.customer_email,
-      amountTotal: session.amount_total, // in kobo
+      amountTotal: session.amount_total, // in pence
     })
   } catch (error) {
     console.error("Error verifying session:", error)
