@@ -22,7 +22,7 @@ const slides = [
     eyebrow: "Welcome to Dajow",
     title: "African &\nCaribbean",
     highlight: "Supermart",
-    subtitle: "Authentic groceries, fresh produce and pantry essentials — delivered to your door.",
+    subtitle: "Authentic groceries, fresh produce and pantry essentials.",
     image: "/banner/2.png",
     accent: "from-orange-950/90 via-orange-900/60 to-transparent",
     cta: { label: "Shop Groceries", href: "/products?category=groceries" },
