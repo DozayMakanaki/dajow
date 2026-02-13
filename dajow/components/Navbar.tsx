@@ -415,7 +415,7 @@ export default function Navbar() {
                   className="text-2xl font-extrabold bg-gradient-to-r from-orange-600 to-orange-500 bg-clip-text text-transparent"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  DAJOW
+                  DAJOW AfroMart
                 </Link>
 
                 {/* Search Mobile */}

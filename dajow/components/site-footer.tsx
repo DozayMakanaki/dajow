@@ -126,7 +126,7 @@ export default function SiteFooter() {
 
       {/* WHATSAPP FLOATING BUTTON */}
       <a
-        href="https://wa.me/234XXXXXXXXXX"
+        href="https://wa.me/+447920693240"
         target="_blank"
         rel="noopener noreferrer"
         className="
