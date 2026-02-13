@@ -17,17 +17,17 @@ import { cn } from "@/lib/utils"
 const slides = [
   {
     id: 1,
-    title: "Premium Beauty Products",
-    subtitle: "Shop high-quality items curated just for you",
+    title: "African and Caribbean",
+    subtitle: "Authentic Afric and Caribbean supermart",
     image: "/banner/1.png",
     cta: {
-      label: "Shop Beauty",
+      label: "Supermart",
       href: "/products?category=beauty",
     },
   },
   {
     id: 2,
-    title: "New Arrivals Every Week",
+    title: "Wigs and Beauty products",
     subtitle: "Stay ahead with the latest trends",
     image: "/banner/2.png",
     cta: {
@@ -37,7 +37,7 @@ const slides = [
   },
   {
     id: 3,
-    title: "Fast Delivery Nationwide",
+    title: "Fast Delivery Worldwide",
     subtitle: "Reliable shipping you can trust",
     image: "/banner/3.png",
     cta: {
