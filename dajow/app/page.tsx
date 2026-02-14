@@ -2,7 +2,7 @@ import HeroCarousel from "@/components/hero-carousel"
 import CategorySection from "@/components/category-sections"
 
 import AboutNewsletter from "@/components/about-newsletter"
-
+import ContactSupport from "@/components/contact-support"
 
 export default function HomePage() {
   return (
@@ -11,6 +11,7 @@ export default function HomePage() {
       <CategorySection />
      
       <AboutNewsletter />
+      <ContactSupport />
       {/* Featured products comes next */}
     </main>
   )
