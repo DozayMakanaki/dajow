@@ -47,9 +47,7 @@ export default function CartPage() {
   })
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  const tax = subtotal * 0.075 // 7.5% VAT
-  const shipping = subtotal > 50 ? 0 : 2.99 // Free shipping over £50
-  const total = subtotal + tax + shipping
+  const total = subtotal
 
   const handleUpdateField = (field: keyof ShippingDetails, value: string) => {
     setShippingDetails((prev) => ({ ...prev, [field]: value }))
@@ -139,9 +137,6 @@ export default function CartPage() {
           throw new Error("No Stripe checkout URL returned")
         }
 
-        // Redirect to Stripe-hosted checkout page
-        // Cart is NOT cleared here — it will be cleared on the success page
-        // after Stripe confirms the payment
         window.location.href = url
         return
       }
@@ -164,15 +159,11 @@ export default function CartPage() {
                   `• ${item.name}\n  Qty: ${item.quantity} × £${item.price.toLocaleString()} = £${(item.price * item.quantity).toLocaleString()}`
               )
               .join("\n\n") +
-            `\n\n💰 *Order Summary:*\n` +
-            `Subtotal: £${subtotal.toLocaleString()}\n` +
-            `VAT (7.5%): £${tax.toLocaleString()}\n` +
-            `Shipping: ${shipping === 0 ? "FREE" : "£" + shipping.toLocaleString()}\n` +
-            `*Total: £${total.toLocaleString()}*\n\n` +
+            `\n\n💰 *Total: £${total.toLocaleString()}*\n\n` +
             `Payment: Cash on Delivery`
         )
 
-        const phone = "2348146714124" // ← YOUR WHATSAPP NUMBER
+        const phone = "2348146714124"
         window.open(`https://wa.me/${phone}?text=${message}`, "_blank")
 
         clearCart()
@@ -218,11 +209,11 @@ export default function CartPage() {
 
         {/* Progress Steps */}
         <div className="mb-8 md:mb-12">
-          <div className="flex items-center justify-center gap-4">
+          <div className="flex items-center justify-center gap-2 md:gap-4">
             <StepIndicator number={1} label="Cart" active={step === "cart"} completed={step !== "cart"} />
-            <div className={`h-1 w-12 md:w-24 rounded-full transition-colors ${step !== "cart" ? "bg-orange-600" : "bg-gray-200"}`} />
+            <div className={`h-1 w-8 md:w-24 rounded-full transition-colors ${step !== "cart" ? "bg-orange-600" : "bg-gray-200"}`} />
             <StepIndicator number={2} label="Details" active={step === "details"} completed={step === "payment"} />
-            <div className={`h-1 w-12 md:w-24 rounded-full transition-colors ${step === "payment" ? "bg-orange-600" : "bg-gray-200"}`} />
+            <div className={`h-1 w-8 md:w-24 rounded-full transition-colors ${step === "payment" ? "bg-orange-600" : "bg-gray-200"}`} />
             <StepIndicator number={3} label="Payment" active={step === "payment"} completed={false} />
           </div>
         </div>
@@ -239,7 +230,7 @@ export default function CartPage() {
                 animate={{ opacity: 1, x: 0 }}
                 className="space-y-4"
               >
-                <h1 className="text-3xl md:text-4xl font-bold mb-6">Shopping Cart</h1>
+                <h1 className="text-2xl md:text-4xl font-bold mb-6">Shopping Cart</h1>
 
                 {items.map((item, index) => (
                   <motion.div
@@ -249,8 +240,8 @@ export default function CartPage() {
                     transition={{ delay: index * 0.1 }}
                     className="rounded-2xl border bg-white shadow-sm p-4 md:p-6"
                   >
-                    <div className="flex gap-4 md:gap-6">
-                      <div className="relative h-20 w-20 md:h-28 md:w-28 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
+                    <div className="flex gap-3 md:gap-6">
+                      <div className="relative h-16 w-16 md:h-28 md:w-28 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
                         <Image
                           src={item.image || "/placeholder.png"}
                           alt={item.name}
@@ -260,37 +251,37 @@ export default function CartPage() {
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <h2 className="text-base md:text-lg font-semibold mb-1 line-clamp-2">
+                        <h2 className="text-sm md:text-lg font-semibold mb-1 line-clamp-2">
                           {item.name}
                         </h2>
-                        <p className="text-lg md:text-xl font-bold text-orange-600 mb-4">
+                        <p className="text-base md:text-xl font-bold text-orange-600 mb-3 md:mb-4">
                           £{item.price.toLocaleString()}
                         </p>
 
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3 rounded-full border-2 border-orange-200 px-3 py-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 md:gap-3 rounded-full border-2 border-orange-200 px-2 md:px-3 py-1 md:py-1.5">
                             <button
                               onClick={() => decreaseItem(item.id)}
                               className="text-orange-600 hover:text-orange-700 transition"
                             >
-                              <Minus size={16} />
+                              <Minus size={14} className="md:w-4 md:h-4" />
                             </button>
-                            <span className="font-semibold min-w-[20px] text-center">
+                            <span className="font-semibold min-w-[16px] md:min-w-[20px] text-center text-sm md:text-base">
                               {item.quantity}
                             </span>
                             <button
                               onClick={() => addItem(item)}
                               className="text-orange-600 hover:text-orange-700 transition"
                             >
-                              <Plus size={16} />
+                              <Plus size={14} className="md:w-4 md:h-4" />
                             </button>
                           </div>
 
                           <button
                             onClick={() => removeItem(item.id)}
-                            className="flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 font-medium transition"
+                            className="flex items-center gap-1 text-xs md:text-sm text-red-600 hover:text-red-700 font-medium transition"
                           >
-                            <Trash2 size={16} />
+                            <Trash2 size={14} className="md:w-4 md:h-4" />
                             <span className="hidden sm:inline">Remove</span>
                           </button>
                         </div>
@@ -302,10 +293,11 @@ export default function CartPage() {
                 <Button
                   onClick={handleProceedToDetails}
                   size="lg"
-                  className="w-full bg-orange-600 hover:bg-orange-700 h-14 text-lg mt-6"
+                  className="w-full bg-orange-600 hover:bg-orange-700 h-12 md:h-14 text-base md:text-lg mt-6"
                 >
-                  Proceed to Shipping Details
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  <span className="hidden sm:inline">Proceed to Shipping Details</span>
+                  <span className="sm:hidden">Continue</span>
+                  <ArrowRight className="ml-2 h-4 w-4 md:h-5 md:w-5" />
                 </Button>
               </motion.div>
             )}
@@ -315,27 +307,27 @@ export default function CartPage() {
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="bg-white rounded-2xl border shadow-sm p-6 md:p-8"
+                className="bg-white rounded-2xl border shadow-sm p-4 md:p-8"
               >
-                <h2 className="text-2xl md:text-3xl font-bold mb-6">Shipping Details</h2>
+                <h2 className="text-xl md:text-3xl font-bold mb-4 md:mb-6">Shipping Details</h2>
 
                 <div className="space-y-4">
-                  <div className="grid md:grid-cols-2 gap-4">
+                  <div className="grid sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        <User className="inline h-4 w-4 mr-1 text-orange-600" />
+                      <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
+                        <User className="inline h-3 w-3 md:h-4 md:w-4 mr-1 text-orange-600" />
                         Full Name *
                       </label>
                       <Input
                         value={shippingDetails.fullName}
                         onChange={(e) => handleUpdateField("fullName", e.target.value)}
                         placeholder="John Doe"
-                        className="h-12"
+                        className="h-10 md:h-12 text-sm md:text-base"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        <Mail className="inline h-4 w-4 mr-1 text-orange-600" />
+                      <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
+                        <Mail className="inline h-3 w-3 md:h-4 md:w-4 mr-1 text-orange-600" />
                         Email Address *
                       </label>
                       <Input
@@ -343,87 +335,88 @@ export default function CartPage() {
                         value={shippingDetails.email}
                         onChange={(e) => handleUpdateField("email", e.target.value)}
                         placeholder="john@example.com"
-                        className="h-12"
+                        className="h-10 md:h-12 text-sm md:text-base"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <Phone className="inline h-4 w-4 mr-1 text-orange-600" />
+                    <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
+                      <Phone className="inline h-3 w-3 md:h-4 md:w-4 mr-1 text-orange-600" />
                       Phone Number *
                     </label>
                     <Input
                       value={shippingDetails.phone}
                       onChange={(e) => handleUpdateField("phone", e.target.value)}
                       placeholder="+234 XXX XXX XXXX"
-                      className="h-12"
+                      className="h-10 md:h-12 text-sm md:text-base"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <MapPin className="inline h-4 w-4 mr-1 text-orange-600" />
+                    <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
+                      <MapPin className="inline h-3 w-3 md:h-4 md:w-4 mr-1 text-orange-600" />
                       Street Address *
                     </label>
                     <Input
                       value={shippingDetails.address}
                       onChange={(e) => handleUpdateField("address", e.target.value)}
                       placeholder="123 Main Street"
-                      className="h-12"
+                      className="h-10 md:h-12 text-sm md:text-base"
                     />
                   </div>
 
-                  <div className="grid md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">City *</label>
+                      <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">City *</label>
                       <Input
                         value={shippingDetails.city}
                         onChange={(e) => handleUpdateField("city", e.target.value)}
                         placeholder="Lagos"
-                        className="h-12"
+                        className="h-10 md:h-12 text-sm md:text-base"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">State *</label>
+                      <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">State *</label>
                       <Input
                         value={shippingDetails.state}
                         onChange={(e) => handleUpdateField("state", e.target.value)}
                         placeholder="Lagos State"
-                        className="h-12"
+                        className="h-10 md:h-12 text-sm md:text-base"
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <div className="col-span-2 sm:col-span-1">
+                      <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
                         Postal Code
                       </label>
                       <Input
                         value={shippingDetails.postalCode}
                         onChange={(e) => handleUpdateField("postalCode", e.target.value)}
                         placeholder="100001"
-                        className="h-12"
+                        className="h-10 md:h-12 text-sm md:text-base"
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="flex gap-4 mt-8">
+                <div className="flex flex-col sm:flex-row gap-3 md:gap-4 mt-6 md:mt-8">
                   <Button
                     onClick={() => setStep("cart")}
                     variant="outline"
                     size="lg"
-                    className="flex-1 h-14"
+                    className="w-full sm:flex-1 h-12 md:h-14 text-sm md:text-base"
                   >
                     Back to Cart
                   </Button>
                   <Button
                     onClick={handleProceedToPayment}
                     size="lg"
-                    className="flex-1 bg-orange-600 hover:bg-orange-700 h-14"
+                    className="w-full sm:flex-1 bg-orange-600 hover:bg-orange-700 h-12 md:h-14 text-sm md:text-base"
                     disabled={!isDetailsValid()}
                   >
-                    Continue to Payment
-                    <ArrowRight className="ml-2 h-5 w-5" />
+                    <span className="hidden sm:inline">Continue to Payment</span>
+                    <span className="sm:hidden">Continue</span>
+                    <ArrowRight className="ml-2 h-4 w-4 md:h-5 md:w-5" />
                   </Button>
                 </div>
               </motion.div>
@@ -436,16 +429,16 @@ export default function CartPage() {
                 animate={{ opacity: 1, x: 0 }}
                 className="space-y-6"
               >
-                <div className="bg-white rounded-2xl border shadow-sm p-6 md:p-8">
-                  <h2 className="text-2xl md:text-3xl font-bold mb-2">Payment Method</h2>
-                  <p className="text-gray-500 text-sm mb-6">
+                <div className="bg-white rounded-2xl border shadow-sm p-4 md:p-8">
+                  <h2 className="text-xl md:text-3xl font-bold mb-2">Payment Method</h2>
+                  <p className="text-gray-500 text-xs md:text-sm mb-4 md:mb-6">
                     Choose how you'd like to pay for your order
                   </p>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3 md:space-y-4">
                     {/* Stripe Option */}
                     <label
-                      className={`flex items-start gap-4 p-5 border-2 rounded-2xl cursor-pointer transition-all ${
+                      className={`flex items-start gap-3 md:gap-4 p-4 md:p-5 border-2 rounded-xl md:rounded-2xl cursor-pointer transition-all ${
                         paymentMethod === "stripe"
                           ? "border-orange-600 bg-orange-50"
                           : "border-gray-200 hover:border-orange-300 hover:bg-gray-50"
@@ -455,28 +448,27 @@ export default function CartPage() {
                         type="radio"
                         checked={paymentMethod === "stripe"}
                         onChange={() => setPaymentMethod("stripe")}
-                        className="mt-1 w-5 h-5 accent-orange-600 flex-shrink-0"
+                        className="mt-0.5 md:mt-1 w-4 h-4 md:w-5 md:h-5 accent-orange-600 flex-shrink-0"
                       />
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <CreditCard className="h-5 w-5 text-orange-600" />
-                          <p className="font-semibold">Pay with Card (Stripe)</p>
+                          <CreditCard className="h-4 w-4 md:h-5 md:w-5 text-orange-600" />
+                          <p className="font-semibold text-sm md:text-base">Pay with Card (Stripe)</p>
                         </div>
-                        <p className="text-sm text-gray-500 mb-3">
-                          Visa, Mastercard, American Express. Powered by Stripe.
+                        <p className="text-xs md:text-sm text-gray-500 mb-2 md:mb-3">
+                          Visa, Mastercard, American Express
                         </p>
-                        {/* Card brand icons */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           {["VISA", "MC", "AMEX"].map((brand) => (
                             <span
                               key={brand}
-                              className="text-xs font-bold px-2 py-1 bg-white border border-gray-200 rounded text-gray-600"
+                              className="text-[10px] md:text-xs font-bold px-1.5 md:px-2 py-0.5 md:py-1 bg-white border border-gray-200 rounded text-gray-600"
                             >
                               {brand}
                             </span>
                           ))}
-                          <span className="flex items-center gap-1 text-xs text-green-700 font-medium">
-                            <Lock className="h-3 w-3" />
+                          <span className="flex items-center gap-1 text-[10px] md:text-xs text-green-700 font-medium">
+                            <Lock className="h-2.5 w-2.5 md:h-3 md:w-3" />
                             Secure
                           </span>
                         </div>
@@ -485,7 +477,7 @@ export default function CartPage() {
 
                     {/* WhatsApp Option */}
                     <label
-                      className={`flex items-start gap-4 p-5 border-2 rounded-2xl cursor-pointer transition-all ${
+                      className={`flex items-start gap-3 md:gap-4 p-4 md:p-5 border-2 rounded-xl md:rounded-2xl cursor-pointer transition-all ${
                         paymentMethod === "whatsapp"
                           ? "border-green-600 bg-green-50"
                           : "border-gray-200 hover:border-green-300 hover:bg-gray-50"
@@ -495,36 +487,35 @@ export default function CartPage() {
                         type="radio"
                         checked={paymentMethod === "whatsapp"}
                         onChange={() => setPaymentMethod("whatsapp")}
-                        className="mt-1 w-5 h-5 accent-green-600 flex-shrink-0"
+                        className="mt-0.5 md:mt-1 w-4 h-4 md:w-5 md:h-5 accent-green-600 flex-shrink-0"
                       />
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <MessageCircle className="h-5 w-5 text-green-600" />
-                          <p className="font-semibold">Order via WhatsApp</p>
+                          <MessageCircle className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
+                          <p className="font-semibold text-sm md:text-base">Order via WhatsApp</p>
                         </div>
-                        <p className="text-sm text-gray-500 mb-2">
-                          Send your order via WhatsApp and pay on delivery.
+                        <p className="text-xs md:text-sm text-gray-500 mb-2">
+                          Send order via WhatsApp and pay on delivery
                         </p>
-                        <span className="inline-block text-xs font-semibold bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                        <span className="inline-block text-[10px] md:text-xs font-semibold bg-green-100 text-green-700 px-2 py-1 rounded-full">
                           Cash on Delivery
                         </span>
                       </div>
                     </label>
                   </div>
 
-                  {/* Context-sensitive info banner */}
+                  {/* Info banners */}
                   {paymentMethod === "stripe" && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
-                      className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3"
+                      className="mt-3 md:mt-4 p-3 md:p-4 bg-blue-50 border border-blue-200 rounded-lg md:rounded-xl flex items-start gap-2 md:gap-3"
                     >
-                      <ShieldCheck className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                      <div className="text-sm text-blue-800">
+                      <ShieldCheck className="h-4 w-4 md:h-5 md:w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <div className="text-xs md:text-sm text-blue-800">
                         <p className="font-semibold mb-0.5">Secure Card Payment</p>
                         <p className="text-blue-700">
-                          You'll be redirected to Stripe's secure checkout. Your card details are
-                          never stored on our servers.
+                          You'll be redirected to Stripe's secure checkout
                         </p>
                       </div>
                     </motion.div>
@@ -534,25 +525,24 @@ export default function CartPage() {
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
-                      className="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl flex items-start gap-3"
+                      className="mt-3 md:mt-4 p-3 md:p-4 bg-green-50 border border-green-200 rounded-lg md:rounded-xl flex items-start gap-2 md:gap-3"
                     >
-                      <MessageCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                      <div className="text-sm text-green-800">
+                      <MessageCircle className="h-4 w-4 md:h-5 md:w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <div className="text-xs md:text-sm text-green-800">
                         <p className="font-semibold mb-0.5">WhatsApp Order</p>
                         <p className="text-green-700">
-                          After clicking "Place Order", WhatsApp will open with your order
-                          details pre-filled. Pay cash when your order is delivered.
+                          WhatsApp will open with your order details pre-filled
                         </p>
                       </div>
                     </motion.div>
                   )}
 
-                  <div className="flex gap-4 mt-8">
+                  <div className="flex flex-col sm:flex-row gap-3 md:gap-4 mt-6 md:mt-8">
                     <Button
                       onClick={() => setStep("details")}
                       variant="outline"
                       size="lg"
-                      className="flex-1 h-14"
+                      className="w-full sm:flex-1 h-12 md:h-14 text-sm md:text-base"
                     >
                       Back
                     </Button>
@@ -560,30 +550,33 @@ export default function CartPage() {
                       onClick={handleCheckout}
                       disabled={loading}
                       size="lg"
-                      className="flex-1 bg-orange-600 hover:bg-orange-700 h-14 text-base font-semibold"
+                      className="w-full sm:flex-1 bg-orange-600 hover:bg-orange-700 h-12 md:h-14 text-sm md:text-base font-semibold"
                     >
                       {loading
                         ? "Processing..."
                         : paymentMethod === "stripe"
-                        ? `Pay £${total.toLocaleString()} with Card`
+                        ? `Pay £${total.toLocaleString()}`
                         : `Place Order - £${total.toLocaleString()}`}
                     </Button>
                   </div>
                 </div>
 
                 {/* Trust badges */}
-                <div className="flex items-center justify-center gap-6 text-sm text-gray-500 py-2">
-                  <span className="flex items-center gap-1.5">
-                    <Lock className="h-4 w-4 text-gray-400" />
-                    SSL Encrypted
+                <div className="flex items-center justify-center gap-3 md:gap-6 text-xs md:text-sm text-gray-500 py-2">
+                  <span className="flex items-center gap-1 md:gap-1.5">
+                    <Lock className="h-3 w-3 md:h-4 md:w-4 text-gray-400" />
+                    <span className="hidden sm:inline">SSL Encrypted</span>
+                    <span className="sm:hidden">Secure</span>
                   </span>
-                  <span className="flex items-center gap-1.5">
-                    <ShieldCheck className="h-4 w-4 text-gray-400" />
-                    Secure Checkout
+                  <span className="flex items-center gap-1 md:gap-1.5">
+                    <ShieldCheck className="h-3 w-3 md:h-4 md:w-4 text-gray-400" />
+                    <span className="hidden sm:inline">Secure Checkout</span>
+                    <span className="sm:hidden">Protected</span>
                   </span>
-                  <span className="flex items-center gap-1.5">
-                    <RotateCcw className="h-4 w-4 text-gray-400" />
-                    7-Day Returns
+                  <span className="flex items-center gap-1 md:gap-1.5">
+                    <RotateCcw className="h-3 w-3 md:h-4 md:w-4 text-gray-400" />
+                    <span className="hidden sm:inline">7-Day Returns</span>
+                    <span className="sm:hidden">Returns</span>
                   </span>
                 </div>
               </motion.div>
@@ -592,14 +585,14 @@ export default function CartPage() {
 
           {/* ─── RIGHT COLUMN — Order Summary ─── */}
           <div className="lg:sticky lg:top-24 h-fit">
-            <div className="rounded-2xl border bg-white shadow-lg p-6">
-              <h3 className="text-xl font-bold mb-6">Order Summary</h3>
+            <div className="rounded-2xl border bg-white shadow-lg p-4 md:p-6">
+              <h3 className="text-lg md:text-xl font-bold mb-4 md:mb-6">Order Summary</h3>
 
               {/* Mini item list */}
-              <div className="space-y-3 mb-6">
+              <div className="space-y-2 md:space-y-3 mb-4 md:mb-6 max-h-64 overflow-y-auto">
                 {items.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3">
-                    <div className="relative h-10 w-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                  <div key={item.id} className="flex items-center gap-2 md:gap-3">
+                    <div className="relative h-8 w-8 md:h-10 md:w-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                       <Image
                         src={item.image || "/placeholder.png"}
                         alt={item.name}
@@ -608,32 +601,18 @@ export default function CartPage() {
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{item.name}</p>
-                      <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                      <p className="text-xs md:text-sm font-medium truncate">{item.name}</p>
+                      <p className="text-[10px] md:text-xs text-gray-500">Qty: {item.quantity}</p>
                     </div>
-                    <p className="text-sm font-semibold">
+                    <p className="text-xs md:text-sm font-semibold">
                       £{(item.price * item.quantity).toLocaleString()}
                     </p>
                   </div>
                 ))}
               </div>
 
-              <div className="border-t pt-4 space-y-3 text-sm mb-6">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal ({items.length} items)</span>
-                  <span className="font-semibold">£{subtotal.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">VAT (7.5%)</span>
-                  <span className="font-semibold">£{Math.round(tax).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Shipping</span>
-                  <span className={`font-semibold ${shipping === 0 ? "text-green-600" : ""}`}>
-                    {shipping === 0 ? "FREE" : `£${shipping.toLocaleString()}`}
-                  </span>
-                </div>
-                <div className="border-t pt-3 flex justify-between text-lg">
+              <div className="border-t pt-3 md:pt-4 space-y-2 md:space-y-3 text-xs md:text-sm">
+                <div className="flex justify-between text-base md:text-lg">
                   <span className="font-bold">Total</span>
                   <span className="font-bold text-orange-600">
                     £{Math.round(total).toLocaleString()}
@@ -641,25 +620,13 @@ export default function CartPage() {
                 </div>
               </div>
 
-              {shipping === 0 && (
-                <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-sm text-green-800 mb-4">
-                  🎉 You've unlocked free shipping!
-                </div>
-              )}
-
-              {shipping > 0 && (
-                <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 text-xs text-orange-800 mb-4">
-                  Add £{(50 - subtotal).toLocaleString()} more to get <strong>free shipping</strong>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <p className="text-xs text-gray-500 flex items-center gap-1.5">
-                  <ShieldCheck className="h-3.5 w-3.5 text-gray-400" />
+              <div className="mt-4 md:mt-6 space-y-1.5 md:space-y-2">
+                <p className="text-[10px] md:text-xs text-gray-500 flex items-center gap-1 md:gap-1.5">
+                  <ShieldCheck className="h-3 w-3 md:h-3.5 md:w-3.5 text-gray-400" />
                   Secure checkout guaranteed
                 </p>
-                <p className="text-xs text-gray-500 flex items-center gap-1.5">
-                  <RotateCcw className="h-3.5 w-3.5 text-gray-400" />
+                <p className="text-[10px] md:text-xs text-gray-500 flex items-center gap-1 md:gap-1.5">
+                  <RotateCcw className="h-3 w-3 md:h-3.5 md:w-3.5 text-gray-400" />
                   Easy returns within 7 days
                 </p>
               </div>
@@ -677,16 +644,16 @@ function StepIndicator({
   number: number; label: string; active: boolean; completed: boolean
 }) {
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-1 md:gap-2">
       <div
-        className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center font-bold text-sm md:text-base transition-all ${
+        className={`w-8 h-8 md:w-12 md:h-12 rounded-full flex items-center justify-center font-bold text-xs md:text-base transition-all ${
           completed || active ? "bg-orange-600 text-white shadow-md shadow-orange-200" : "bg-gray-200 text-gray-500"
         }`}
       >
         {number}
       </div>
       <span
-        className={`text-xs md:text-sm font-medium ${
+        className={`text-[10px] md:text-sm font-medium ${
           active || completed ? "text-orange-600" : "text-gray-500"
         }`}
       >

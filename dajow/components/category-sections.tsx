@@ -264,12 +264,7 @@ export default function CategorySections() {
               View All Products
               <ArrowRight className="h-6 w-6" />
             </Link>
-            <Link
-              href="/contact"
-              className="inline-flex items-center justify-center gap-3 bg-orange-800/50 backdrop-blur-sm border-2 border-white/30 text-white px-10 py-5 rounded-2xl font-black text-lg hover:bg-orange-900/50 transition-all"
-            >
-              Contact Support
-            </Link>
+            
           </div>
         </div>
       </motion.div>
