@@ -157,7 +157,7 @@ export default function ProductsPage() {
                   </Button>
                 </SheetTrigger>
 
-                <SheetContent side="left" className="w-full max-w-sm p-0 flex flex-col" hideCloseButton>
+                <SheetContent side="left" className="w-full max-w-sm p-0 flex flex-col [&>button:first-child]:hidden">
                   {/* ── Back button header ── */}
                   <div className="flex items-center gap-3 px-4 py-4 border-b bg-white sticky top-0 z-10">
                     <button
@@ -303,7 +303,7 @@ export default function ProductsPage() {
                     </Button>
                   </SheetTrigger>
 
-                  <SheetContent side="left" className="w-full max-w-sm p-0 flex flex-col" hideCloseButton>
+                  <SheetContent side="left" className="w-full max-w-sm p-0 flex flex-col [&>button:first-child]:hidden">
                     {/* ── Back button header ── */}
                     <div className="flex items-center gap-3 px-4 py-4 border-b bg-white sticky top-0 z-10">
                       <button
