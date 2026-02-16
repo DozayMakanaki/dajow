@@ -163,7 +163,7 @@ export default function CartPage() {
             `Payment: Cash on Delivery`
         )
 
-        const phone = "2348146714124"
+        const phone = "+447704335223"
         window.open(`https://wa.me/${phone}?text=${message}`, "_blank")
 
         clearCart()
@@ -498,7 +498,7 @@ export default function CartPage() {
                           Send order via WhatsApp and pay on delivery
                         </p>
                         <span className="inline-block text-[10px] md:text-xs font-semibold bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                          Cash on Delivery
+                          Cash
                         </span>
                       </div>
                     </label>
@@ -575,8 +575,7 @@ export default function CartPage() {
                   </span>
                   <span className="flex items-center gap-1 md:gap-1.5">
                     <RotateCcw className="h-3 w-3 md:h-4 md:w-4 text-gray-400" />
-                    <span className="hidden sm:inline">7-Day Returns</span>
-                    <span className="sm:hidden">Returns</span>
+                    
                   </span>
                 </div>
               </motion.div>
@@ -625,10 +624,7 @@ export default function CartPage() {
                   <ShieldCheck className="h-3 w-3 md:h-3.5 md:w-3.5 text-gray-400" />
                   Secure checkout guaranteed
                 </p>
-                <p className="text-[10px] md:text-xs text-gray-500 flex items-center gap-1 md:gap-1.5">
-                  <RotateCcw className="h-3 w-3 md:h-3.5 md:w-3.5 text-gray-400" />
-                  Easy returns within 7 days
-                </p>
+                
               </div>
             </div>
           </div>
