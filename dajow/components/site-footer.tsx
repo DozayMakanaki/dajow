@@ -184,7 +184,7 @@ export default function SiteFooter() {
         </div>
       </motion.footer>
 
-      {/* WHATSAPP FLOATING BUTTONS */}
+      {/* WHATSAPP FLOATING BUTTON */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
 
         {/* Speech bubble tooltip */}
@@ -198,68 +198,34 @@ export default function SiteFooter() {
           <span className="absolute -bottom-2 right-6 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-white drop-shadow-sm" />
         </motion.div>
 
-        {/* Two WhatsApp buttons */}
-        <div className="flex flex-col items-end gap-2">
-
-          {/* Number 1 */}
-          <motion.a
-            href="https://wa.me/447704335223"
-            target="_blank"
-            rel="noopener noreferrer"
-            animate={{ y: [0, -10, 0] }}
-            transition={{
-              duration: 1.4,
-              repeat: Infinity,
-              repeatType: "loop",
-              ease: "easeInOut",
-            }}
-            whileHover={{ scale: 1.1, y: 0 }}
-            whileTap={{ scale: 0.95 }}
-            className="flex items-center gap-3 rounded-full bg-green-500 px-5 py-4 text-white shadow-xl hover:bg-green-600 transition-colors"
-          >
-            <span className="relative flex items-center justify-center">
-              <motion.span
-                animate={{ scale: [1, 1.6, 1], opacity: [0.5, 0, 0.5] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}
-                className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-50"
-              />
-              <MessageCircle className="h-6 w-6 relative z-10" />
-            </span>
-            <span className="hidden sm:inline font-semibold text-sm">
-              Chat with us
-            </span>
-          </motion.a>
-
-          {/* Number 2 */}
-          <motion.a
-            href="https://wa.me/447763701737"
-            target="_blank"
-            rel="noopener noreferrer"
-            animate={{ y: [0, -10, 0] }}
-            transition={{
-              duration: 1.4,
-              delay: 0.7,
-              repeat: Infinity,
-              repeatType: "loop",
-              ease: "easeInOut",
-            }}
-            whileHover={{ scale: 1.1, y: 0 }}
-            whileTap={{ scale: 0.95 }}
-            className="flex items-center gap-3 rounded-full bg-green-600 px-5 py-4 text-white shadow-xl hover:bg-green-700 transition-colors"
-          >
-            <span className="relative flex items-center justify-center">
-              <motion.span
-                animate={{ scale: [1, 1.6, 1], opacity: [0.5, 0, 0.5] }}
-                transition={{ duration: 2, delay: 0.7, repeat: Infinity, ease: "easeOut" }}
-                className="absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-50"
-              />
-              <MessageCircle className="h-6 w-6 relative z-10" />
-            </span>
-            <span className="hidden sm:inline font-semibold text-sm">
-              Chat with us
-            </span>
-          </motion.a>
-        </div>
+        {/* Single bouncing button */}
+        <motion.a
+          href="https://wa.me/447704335223"
+          target="_blank"
+          rel="noopener noreferrer"
+          animate={{ y: [0, -10, 0] }}
+          transition={{
+            duration: 1.4,
+            repeat: Infinity,
+            repeatType: "loop",
+            ease: "easeInOut",
+          }}
+          whileHover={{ scale: 1.1, y: 0 }}
+          whileTap={{ scale: 0.95 }}
+          className="flex items-center gap-3 rounded-full bg-green-500 px-5 py-4 text-white shadow-xl hover:bg-green-600 transition-colors"
+        >
+          <span className="relative flex items-center justify-center">
+            <motion.span
+              animate={{ scale: [1, 1.6, 1], opacity: [0.5, 0, 0.5] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}
+              className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-50"
+            />
+            <MessageCircle className="h-6 w-6 relative z-10" />
+          </span>
+          <span className="hidden sm:inline font-semibold text-sm">
+            Chat with us
+          </span>
+        </motion.a>
       </div>
     </>
   )
