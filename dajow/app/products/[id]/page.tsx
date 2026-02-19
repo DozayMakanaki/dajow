@@ -6,17 +6,12 @@ import { getProductById, trackProductView, type Product } from "@/lib/products"
 import Image from "next/image"
 import { useCartStore } from "@/store/cart-store"
 import { Button } from "@/components/ui/button"
-import { Minus, Plus, ShoppingCart, Heart, Star, Package, TruckIcon, ShieldCheck, Check, Trash2 } from "lucide-react"
+import { Minus, Plus, ShoppingCart, Heart, Star, Package, TruckIcon, ShieldCheck, Check } from "lucide-react"
 import { motion } from "framer-motion"
 
 interface ProductVariant {
   size: string
   price: number
-}
-
-interface SelectedVariantWithQuantity {
-  variant: ProductVariant
-  quantity: number
 }
 
 export default function ProductDetailPage() {
@@ -25,7 +20,8 @@ export default function ProductDetailPage() {
   
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
-  const [selectedVariants, setSelectedVariants] = useState<SelectedVariantWithQuantity[]>([])
+  const [quantity, setQuantity] = useState(1)
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null)
   const { addItem } = useCartStore()
 
   useEffect(() => {
@@ -43,7 +39,7 @@ export default function ProductDetailPage() {
         
         // Auto-select first variant if product has variants
         if (data.hasVariants && data.variants && data.variants.length > 0) {
-          setSelectedVariants([{ variant: data.variants[0], quantity: 1 }])
+          setSelectedVariant(data.variants[0])
         }
         
         trackProductView(id)
@@ -55,91 +51,45 @@ export default function ProductDetailPage() {
       .finally(() => setLoading(false))
   }, [id])
 
-  const handleAddVariant = (variant: ProductVariant) => {
-    const exists = selectedVariants.find(sv => sv.variant.size === variant.size)
-    if (exists) {
-      // If variant already selected, just increase quantity
-      setSelectedVariants(prev =>
-        prev.map(sv =>
-          sv.variant.size === variant.size
-            ? { ...sv, quantity: sv.quantity + 1 }
-            : sv
-        )
-      )
-    } else {
-      // Add new variant with quantity 1
-      setSelectedVariants(prev => [...prev, { variant, quantity: 1 }])
-    }
-  }
-
-  const handleRemoveVariant = (size: string) => {
-    setSelectedVariants(prev => prev.filter(sv => sv.variant.size !== size))
-  }
-
-  const handleIncreaseQuantity = (size: string) => {
-    setSelectedVariants(prev =>
-      prev.map(sv =>
-        sv.variant.size === size
-          ? { ...sv, quantity: sv.quantity + 1 }
-          : sv
-      )
-    )
-  }
-
-  const handleDecreaseQuantity = (size: string) => {
-    setSelectedVariants(prev =>
-      prev.map(sv =>
-        sv.variant.size === size
-          ? { ...sv, quantity: Math.max(1, sv.quantity - 1) }
-          : sv
-      )
-    )
-  }
-
   const handleAddToCart = () => {
     if (!product) return
 
-    if (product.hasVariants && selectedVariants.length === 0) {
-      alert("Please select at least one size")
+    // Check if variants exist and one is selected
+    if (product.hasVariants && !selectedVariant) {
+      alert("Please select a size")
       return
     }
 
-    // Add all selected variants with their quantities
-    if (product.hasVariants && selectedVariants.length > 0) {
-      selectedVariants.forEach(({ variant, quantity }) => {
-        for (let i = 0; i < quantity; i++) {
-          addItem({
-            id: product.id,
-            name: `${product.name} - ${variant.size}`,
-            price: variant.price || 0,
-            image: product.image,
-            quantity: 1
-          })
-        }
-      })
-      
-      const totalItems = selectedVariants.reduce((sum, sv) => sum + sv.quantity, 0)
-      alert(`Added ${totalItems} item(s) to cart!`)
-    } else {
-      // Product without variants
+    // Determine the price based on whether variants exist
+    const finalPrice = product.hasVariants && selectedVariant
+      ? selectedVariant.price
+      : product.price || 0
+
+    const itemName = product.hasVariants && selectedVariant
+      ? `${product.name} - ${selectedVariant.size}`
+      : product.name
+
+    // Add items based on quantity
+    for (let i = 0; i < quantity; i++) {
       addItem({
         id: product.id,
-        name: product.name,
-        price: product.price || 0,
+        name: itemName,
+        price: finalPrice,
         image: product.image,
         quantity: 1
       })
-      alert(`Added ${product.name} to cart!`)
     }
+
+    alert(`Added ${quantity} × ${itemName} to cart!`)
   }
 
-  // Calculate total price for selected variants
-  const totalPrice = selectedVariants.reduce(
-    (sum, sv) => sum + (sv.variant.price || 0) * sv.quantity,
-    0
-  )
+  const increaseQuantity = () => setQuantity(prev => prev + 1)
+  const decreaseQuantity = () => setQuantity(prev => Math.max(1, prev - 1))
 
-  const totalQuantity = selectedVariants.reduce((sum, sv) => sum + sv.quantity, 0)
+  // Get current display price - changes when size is selected
+  const displayPrice = product?.hasVariants && selectedVariant
+    ? (selectedVariant.price || 0)
+    : (product?.price || 0)
 
   if (loading) {
     return (
@@ -222,29 +172,38 @@ export default function ProductDetailPage() {
               <span className="text-sm text-gray-600">(4.9)</span>
             </div>
 
-            {/* Price */}
-            {!product.hasVariants && (
-              <div className="space-y-2">
-                <p className="text-4xl md:text-5xl font-black text-orange-600">
-                  £{(product.price || 0).toLocaleString()}
+            {/* Price - Updates when size changes */}
+            <div className="space-y-2">
+              <motion.p
+                key={displayPrice}
+                initial={{ scale: 1.1 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.3 }}
+                className="text-4xl md:text-5xl font-black text-orange-600"
+              >
+                £{displayPrice.toFixed(2)}
+              </motion.p>
+              {selectedVariant && product.hasVariants && (
+                <p className="text-sm font-medium text-gray-600">
+                  Size: {selectedVariant.size}
                 </p>
-                <p className="text-sm text-gray-500">Tax included. Shipping calculated at checkout.</p>
-              </div>
-            )}
+              )}
+              <p className="text-sm text-gray-500">Tax included. Shipping calculated at checkout.</p>
+            </div>
 
             {/* Size/Variant Selector */}
             {product.hasVariants && product.variants && product.variants.length > 0 && (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <label className="block text-sm font-semibold text-gray-700">
-                  Available Sizes - Click to Add
+                  Select Size
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {product.variants.map((variant, index) => {
-                    const isSelected = selectedVariants.some(sv => sv.variant.size === variant.size)
+                    const isSelected = selectedVariant?.size === variant.size
                     return (
                       <button
                         key={index}
-                        onClick={() => handleAddVariant(variant)}
+                        onClick={() => setSelectedVariant(variant)}
                         className={`relative p-4 rounded-xl border-2 transition-all font-medium ${
                           isSelected
                             ? "border-orange-600 bg-orange-50 text-orange-900"
@@ -257,8 +216,10 @@ export default function ProductDetailPage() {
                           </div>
                         )}
                         <div className="text-center">
-                          <p className="font-bold">{variant.size}</p>
-                          <p className="text-xs mt-1">£{(variant.price || 0).toLocaleString()}</p>
+                          <p className="font-bold text-lg">{variant.size}</p>
+                          <p className="text-sm mt-1 text-orange-600 font-semibold">
+                            £{variant.price.toFixed(2)}
+                          </p>
                         </div>
                       </button>
                     )
@@ -267,71 +228,45 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Selected Variants with Quantities */}
-            {product.hasVariants && selectedVariants.length > 0 && (
-              <div className="space-y-3 bg-gray-50 rounded-xl p-4">
-                <h3 className="font-semibold text-sm text-gray-700">Selected Sizes:</h3>
-                {selectedVariants.map((sv) => (
-                  <div
-                    key={sv.variant.size}
-                    className="flex items-center justify-between bg-white rounded-lg p-3 border"
+            {/* Quantity Selector */}
+            <div className="space-y-3">
+              <label className="block text-sm font-semibold text-gray-700">
+                Quantity
+              </label>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 rounded-full border-2 border-orange-200 px-5 py-3 bg-white">
+                  <button
+                    onClick={decreaseQuantity}
+                    className="text-orange-600 hover:text-orange-700 transition"
                   >
-                    <div className="flex-1">
-                      <p className="font-semibold text-sm">{sv.variant.size}</p>
-                      <p className="text-xs text-gray-500">£{(sv.variant.price || 0).toLocaleString()} each</p>
-                    </div>
-                    
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2 bg-gray-100 rounded-full px-3 py-1">
-                        <button
-                          onClick={() => handleDecreaseQuantity(sv.variant.size)}
-                          className="text-orange-600 hover:text-orange-700"
-                        >
-                          <Minus className="h-4 w-4" />
-                        </button>
-                        <span className="font-bold text-sm min-w-[20px] text-center">
-                          {sv.quantity}
-                        </span>
-                        <button
-                          onClick={() => handleIncreaseQuantity(sv.variant.size)}
-                          className="text-orange-600 hover:text-orange-700"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </button>
-                      </div>
-                      
-                      <button
-                        onClick={() => handleRemoveVariant(sv.variant.size)}
-                        className="text-red-500 hover:text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-
-                {/* Total Price */}
-                <div className="flex justify-between items-center pt-3 border-t">
-                  <span className="font-semibold">Total ({totalQuantity} items):</span>
-                  <span className="text-2xl font-black text-orange-600">
-                    £{totalPrice.toLocaleString()}
+                    <Minus className="h-5 w-5" />
+                  </button>
+                  <span className="font-bold text-xl min-w-[40px] text-center">
+                    {quantity}
                   </span>
+                  <button
+                    onClick={increaseQuantity}
+                    className="text-orange-600 hover:text-orange-700 transition"
+                  >
+                    <Plus className="h-5 w-5" />
+                  </button>
+                </div>
+                <div className="text-sm text-gray-600">
+                  Subtotal: <span className="font-bold text-orange-600">£{(displayPrice * quantity).toFixed(2)}</span>
                 </div>
               </div>
-            )}
+            </div>
 
             {/* Add to Cart Button */}
             <div className="flex gap-3">
               <Button
                 onClick={handleAddToCart}
-                disabled={product.hasVariants && selectedVariants.length === 0}
+                disabled={product.hasVariants && !selectedVariant}
                 size="lg"
                 className="flex-1 bg-orange-600 hover:bg-orange-700 h-14 text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ShoppingCart className="mr-2 h-5 w-5" />
-                {product.hasVariants
-                  ? `Add ${totalQuantity} Item${totalQuantity !== 1 ? 's' : ''} to Cart`
-                  : 'Add to Cart'}
+                Add to Cart
               </Button>
               <Button
                 size="lg"
@@ -343,9 +278,9 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Variant selection reminder */}
-            {product.hasVariants && selectedVariants.length === 0 && (
+            {product.hasVariants && !selectedVariant && (
               <p className="text-sm text-red-500 font-medium">
-                ⚠️ Click on sizes above to select them
+                ⚠️ Please select a size to continue
               </p>
             )}
 
@@ -383,11 +318,11 @@ export default function ProductDetailPage() {
             {/* Show all available sizes */}
             {product.hasVariants && product.variants && product.variants.length > 0 && (
               <div className="mt-6">
-                <h3 className="font-semibold text-gray-900 mb-3">Available Sizes:</h3>
+                <h3 className="font-semibold text-gray-900 mb-3">Available Sizes & Prices:</h3>
                 <ul className="space-y-2">
                   {product.variants.map((variant, i) => (
                     <li key={i} className="text-gray-600">
-                      <span className="font-medium text-gray-900">{variant.size}</span> - £{(variant.price || 0).toLocaleString()}
+                      <span className="font-medium text-gray-900">{variant.size}</span> - £{variant.price.toFixed(2)}
                     </li>
                   ))}
                 </ul>
