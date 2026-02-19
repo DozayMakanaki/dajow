@@ -62,8 +62,8 @@ export default function ProductDetailPage() {
 
     // Determine the price based on whether variants exist
     const finalPrice = product.hasVariants && selectedVariant
-      ? selectedVariant.price
-      : product.price || 0
+      ? Number(selectedVariant.price) || 0
+      : Number(product.price) || 0
 
     const itemName = product.hasVariants && selectedVariant
       ? `${product.name} - ${selectedVariant.size}`
@@ -86,10 +86,10 @@ export default function ProductDetailPage() {
   const increaseQuantity = () => setQuantity(prev => prev + 1)
   const decreaseQuantity = () => setQuantity(prev => Math.max(1, prev - 1))
 
-  // Get current display price - changes when size is selected
+  // Get current display price - changes when size is selected - SAFE VERSION
   const displayPrice = product?.hasVariants && selectedVariant
-    ? (selectedVariant.price || 0)
-    : (product?.price || 0)
+    ? (Number(selectedVariant.price) || 0)
+    : (Number(product?.price) || 0)
 
   if (loading) {
     return (
@@ -200,6 +200,8 @@ export default function ProductDetailPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {product.variants.map((variant, index) => {
                     const isSelected = selectedVariant?.size === variant.size
+                    const variantPrice = Number(variant.price) || 0
+                    
                     return (
                       <button
                         key={index}
@@ -218,7 +220,7 @@ export default function ProductDetailPage() {
                         <div className="text-center">
                           <p className="font-bold text-lg">{variant.size}</p>
                           <p className="text-sm mt-1 text-orange-600 font-semibold">
-                            £{variant.price.toFixed(2)}
+                            £{variantPrice.toFixed(2)}
                           </p>
                         </div>
                       </button>
@@ -320,11 +322,14 @@ export default function ProductDetailPage() {
               <div className="mt-6">
                 <h3 className="font-semibold text-gray-900 mb-3">Available Sizes & Prices:</h3>
                 <ul className="space-y-2">
-                  {product.variants.map((variant, i) => (
-                    <li key={i} className="text-gray-600">
-                      <span className="font-medium text-gray-900">{variant.size}</span> - £{variant.price.toFixed(2)}
-                    </li>
-                  ))}
+                  {product.variants.map((variant, i) => {
+                    const variantPrice = Number(variant.price) || 0
+                    return (
+                      <li key={i} className="text-gray-600">
+                        <span className="font-medium text-gray-900">{variant.size}</span> - £{variantPrice.toFixed(2)}
+                      </li>
+                    )
+                  })}
                 </ul>
               </div>
             )}
