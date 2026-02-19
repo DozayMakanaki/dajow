@@ -16,6 +16,14 @@ export type Product = {
   popularityScore?: number
   lastViewed?: Date | null
   lastOrdered?: Date | null
+  
+  // Variant support (for products with multiple sizes/prices)
+  hasVariants?: boolean
+  variants?: Array<{
+    size: string
+    price: number
+    image?: string
+  }>
 }
 
 /**
