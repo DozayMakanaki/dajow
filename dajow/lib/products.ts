@@ -9,6 +9,7 @@ export type Product = {
   category: string
   section?: string
   searchKeywords?: string[]
+  description?: string
   
   // Popularity tracking fields
   views?: number
