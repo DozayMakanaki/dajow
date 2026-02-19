@@ -6,7 +6,7 @@ import { getProductById, trackProductView, type Product } from "@/lib/products"
 import Image from "next/image"
 import { useCartStore } from "@/store/cart-store"
 import { Button } from "@/components/ui/button"
-import { Minus, Plus, ShoppingCart, Heart, Star, Package, TruckIcon, ShieldCheck, Check, X, Share2, ChevronLeft } from "lucide-react"
+import { Minus, Plus, ShoppingCart, Heart, Star, Package, TruckIcon, ShieldCheck, Check, Share2, ChevronLeft } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useRouter } from "next/navigation"
 
@@ -16,7 +16,7 @@ interface ProductVariant {
   price: number
 }
 
-// Enhanced color mapping with more gradients
+// Enhanced color mapping
 const COLOR_MAP: { [key: string]: string } = {
   '1': '#000000',
   '2': '#1B1B1B', 
@@ -70,10 +70,11 @@ function getColorHex(colorName: string): string {
   return COLOR_MAP[upper] || COLOR_MAP[colorName.trim()] || '#CCCCCC'
 }
 
+// FIXED: Proper TypeScript typing
 function parseVariants(variants: any[]): ProductVariant[] {
   if (!variants || !Array.isArray(variants)) return []
   
-  return variants.map(variant => {
+  const parsed = variants.map(variant => {
     if (typeof variant === 'object' && (variant.size || variant.color) && variant.price) {
       return {
         size: variant.size ? String(variant.size) : undefined,
@@ -101,7 +102,10 @@ function parseVariants(variants: any[]): ProductVariant[] {
     }
     
     return null
-  }).filter((v): v is ProductVariant => v !== null)
+  })
+  
+  // Properly filter out null values
+  return parsed.filter((v): v is ProductVariant => v !== null)
 }
 
 export default function ProductDetailPage() {
@@ -253,7 +257,7 @@ export default function ProductDetailPage() {
       <div className="max-w-7xl mx-auto px-4 py-8 lg:py-12">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-16">
           
-          {/* Product Image - Modern Floating Card */}
+          {/* Product Image */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -268,7 +272,6 @@ export default function ProductDetailPage() {
                 unoptimized={!product.image || !product.image.startsWith('http')}
               />
               
-              {/* Floating badges */}
               {product.section && (
                 <div className="absolute top-4 left-4">
                   <span className="inline-block px-4 py-2 bg-white/90 backdrop-blur-sm text-orange-600 rounded-full text-xs font-bold uppercase shadow-lg">
@@ -278,7 +281,7 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {/* Trust Badges - Modern Pills */}
+            {/* Trust Badges */}
             <div className="mt-6 flex flex-wrap gap-3">
               <div className="flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-full">
                 <ShieldCheck className="h-4 w-4 text-green-600" />
@@ -295,7 +298,7 @@ export default function ProductDetailPage() {
             </div>
           </motion.div>
 
-          {/* Product Info - Modern Layout */}
+          {/* Product Info */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -324,7 +327,7 @@ export default function ProductDetailPage() {
               {product.name || "Unnamed Product"}
             </h1>
 
-            {/* Price - Large & Bold */}
+            {/* Price */}
             <div className="py-4 border-y">
               <motion.div
                 key={displayPrice}
@@ -345,7 +348,7 @@ export default function ProductDetailPage() {
               <p className="text-sm text-gray-500 mt-2">Tax included • Free shipping over £50</p>
             </div>
 
-            {/* Color Selector - Modern Grid */}
+            {/* Color Selector */}
             {product.hasVariants && hasColors && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -399,7 +402,7 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Size Selector - Modern Cards */}
+            {/* Size Selector */}
             {product.hasVariants && hasSizes && !hasColors && (
               <div className="space-y-4">
                 <label className="text-sm font-bold text-gray-900 uppercase tracking-wide">
@@ -443,7 +446,7 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Quantity - Sleek Counter */}
+            {/* Quantity */}
             <div className="space-y-4">
               <label className="text-sm font-bold text-gray-900 uppercase tracking-wide">
                 Quantity
@@ -475,7 +478,7 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
-            {/* Action Buttons - Modern & Bold */}
+            {/* Add to Cart */}
             <div className="space-y-3 pt-4">
               <Button
                 onClick={handleAddToCart}
@@ -505,7 +508,6 @@ export default function ProductDetailPage() {
                 {product.description || `${product.name} is a premium quality product carefully selected to meet your needs. Perfect for everyday use and specially crafted to deliver exceptional value.`}
               </p>
 
-              {/* Available Options List */}
               {product.hasVariants && parsedVariants.length > 0 && (
                 <div className="mt-6 p-4 bg-gray-50 rounded-xl">
                   <h4 className="font-semibold text-gray-900 mb-3 text-sm uppercase tracking-wide">
