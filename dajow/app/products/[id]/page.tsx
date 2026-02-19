@@ -6,29 +6,36 @@ import { getProductById, trackProductView, type Product } from "@/lib/products"
 import Image from "next/image"
 import { useCartStore } from "@/store/cart-store"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Minus, Plus, ShoppingCart, Heart, Star, Package, TruckIcon, ShieldCheck } from "lucide-react"
+import { Minus, Plus, ShoppingCart, Heart, Star, Package, TruckIcon, ShieldCheck, Check } from "lucide-react"
 import { motion } from "framer-motion"
+
+interface ProductVariant {
+  size: string
+  price: number
+}
 
 export default function ProductDetailPage() {
   const params = useParams()
   const id = params.id as string
   
-  // ✅ Fix: Correct state type
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
   const [quantity, setQuantity] = useState(1)
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null)
   const { addItem } = useCartStore()
 
   useEffect(() => {
     if (!id) return
 
-    // Fetch product and track view
     getProductById(id)
       .then((data) => {
         setProduct(data)
         
-        // Track view after product is loaded
+        // Auto-select first variant if product has variants
+        if (data && data.hasVariants && data.variants && data.variants.length > 0) {
+          setSelectedVariant(data.variants[0])
+        }
+        
         if (data) {
           trackProductView(id)
         }
@@ -39,23 +46,36 @@ export default function ProductDetailPage() {
   const handleAddToCart = () => {
     if (!product) return
 
+    // Determine the price based on whether variants exist
+    const finalPrice = product.hasVariants && selectedVariant
+      ? selectedVariant.price
+      : product.price
+
+    const itemName = product.hasVariants && selectedVariant
+      ? `${product.name} - ${selectedVariant.size}`
+      : product.name
+
     // Add items based on quantity
     for (let i = 0; i < quantity; i++) {
       addItem({
         id: product.id,
-        name: product.name,
-        price: product.price,
+        name: itemName,
+        price: finalPrice,
         image: product.image,
         quantity: 1
       })
     }
 
-    // Optional: Show success message or redirect
-    alert(`Added ${quantity} ${product.name} to cart!`)
+    alert(`Added ${quantity} × ${itemName} to cart!`)
   }
 
   const increaseQuantity = () => setQuantity(prev => prev + 1)
   const decreaseQuantity = () => setQuantity(prev => Math.max(1, prev - 1))
+
+  // Get current display price
+  const displayPrice = product?.hasVariants && selectedVariant
+    ? selectedVariant.price
+    : product?.price || 0
 
   if (loading) {
     return (
@@ -75,9 +95,7 @@ export default function ProductDetailPage() {
           <Package className="h-24 w-24 text-gray-300 mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-2">Product Not Found</h1>
           <p className="text-gray-600 mb-6">The product you're looking for doesn't exist.</p>
-          <Button onClick={() => window.history.back()}>
-            Go Back
-          </Button>
+          <Button onClick={() => window.history.back()}>Go Back</Button>
         </div>
       </div>
     )
@@ -95,27 +113,14 @@ export default function ProductDetailPage() {
             className="space-y-4"
           >
             <div className="relative aspect-square rounded-3xl overflow-hidden bg-white border-2 border-gray-100 shadow-xl">
-              <Image
+              <img
                 src={product.image || "/placeholder.png"}
                 alt={product.name}
-                fill
-                className="object-cover"
-                priority
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = "/placeholder.png"
+                }}
               />
-            </div>
-
-            {/* Thumbnails - Optional */}
-            <div className="grid grid-cols-4 gap-3">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 border border-gray-200 opacity-50 cursor-not-allowed">
-                  <Image
-                    src={product.image || "/placeholder.png"}
-                    alt={`Thumbnail ${i}`}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-              ))}
             </div>
           </motion.div>
 
@@ -154,27 +159,50 @@ export default function ProductDetailPage() {
 
             {/* Price */}
             <div className="space-y-2">
-              <p className="text-4xl md:text-5xl font-black text-orange-600">
-                £{product.price.toLocaleString()}
-              </p>
+              <motion.p
+                key={displayPrice}
+                initial={{ scale: 1.05 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.2 }}
+                className="text-4xl md:text-5xl font-black text-orange-600"
+              >
+                £{displayPrice.toLocaleString()}
+              </motion.p>
               <p className="text-sm text-gray-500">Tax included. Shipping calculated at checkout.</p>
             </div>
 
-            {/* Stats */}
-            {(product.views || product.orders) && (
-              <div className="flex items-center gap-6 py-4 border-y">
-                {product.views !== undefined && (
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-gray-900">{product.views}</p>
-                    <p className="text-xs text-gray-500">Views</p>
-                  </div>
-                )}
-                {product.orders !== undefined && (
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-orange-600">{product.orders}</p>
-                    <p className="text-xs text-gray-500">Sold</p>
-                  </div>
-                )}
+            {/* Size/Variant Selector */}
+            {product.hasVariants && product.variants && product.variants.length > 0 && (
+              <div className="space-y-3">
+                <label className="block text-sm font-semibold text-gray-700">
+                  Select Size
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {product.variants.map((variant, index) => {
+                    const isSelected = selectedVariant?.size === variant.size
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => setSelectedVariant(variant)}
+                        className={`relative p-4 rounded-xl border-2 transition-all font-medium ${
+                          isSelected
+                            ? "border-orange-600 bg-orange-50 text-orange-900"
+                            : "border-gray-200 hover:border-orange-300 text-gray-700"
+                        }`}
+                      >
+                        {isSelected && (
+                          <div className="absolute top-2 right-2 w-5 h-5 bg-orange-600 rounded-full flex items-center justify-center">
+                            <Check className="h-3 w-3 text-white" />
+                          </div>
+                        )}
+                        <div className="text-center">
+                          <p className="font-bold">{variant.size}</p>
+                          <p className="text-xs mt-1">£{variant.price}</p>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             )}
 
@@ -208,8 +236,9 @@ export default function ProductDetailPage() {
             <div className="flex gap-3">
               <Button
                 onClick={handleAddToCart}
+                disabled={product.hasVariants && !selectedVariant}
                 size="lg"
-                className="flex-1 bg-orange-600 hover:bg-orange-700 h-14 text-lg font-bold"
+                className="flex-1 bg-orange-600 hover:bg-orange-700 h-14 text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ShoppingCart className="mr-2 h-5 w-5" />
                 Add to Cart
@@ -223,11 +252,18 @@ export default function ProductDetailPage() {
               </Button>
             </div>
 
+            {/* Variant selection reminder */}
+            {product.hasVariants && !selectedVariant && (
+              <p className="text-sm text-red-500 font-medium">
+                ⚠️ Please select a size to continue
+              </p>
+            )}
+
             {/* Features */}
             <div className="space-y-3 pt-6">
               <div className="flex items-center gap-3 text-sm">
                 <TruckIcon className="h-5 w-5 text-orange-600" />
-                <span className="text-gray-700">Free shipping on orders over ₦50,000</span>
+                <span className="text-gray-700">Free shipping on orders over £50</span>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <Package className="h-5 w-5 text-orange-600" />
@@ -251,10 +287,22 @@ export default function ProductDetailPage() {
           <h2 className="text-2xl font-bold mb-6">Product Details</h2>
           <div className="prose max-w-none">
             <p className="text-gray-600 leading-relaxed">
-              {product.name} is a premium quality product carefully selected to meet your needs. 
-              Perfect for everyday use and specially crafted to deliver exceptional value.
+              {product.description || `${product.name} is a premium quality product carefully selected to meet your needs. Perfect for everyday use and specially crafted to deliver exceptional value.`}
             </p>
-            {/* Add more product details here */}
+
+            {/* Show all available sizes */}
+            {product.hasVariants && product.variants && product.variants.length > 0 && (
+              <div className="mt-6">
+                <h3 className="font-semibold text-gray-900 mb-3">Available Sizes:</h3>
+                <ul className="space-y-2">
+                  {product.variants.map((variant, i) => (
+                    <li key={i} className="text-gray-600">
+                      <span className="font-medium text-gray-900">{variant.size}</span> - £{variant.price}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </motion.div>
       </div>
