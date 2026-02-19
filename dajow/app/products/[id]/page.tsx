@@ -29,16 +29,24 @@ export default function ProductDetailPage() {
 
     getProductById(id)
       .then((data) => {
+        if (!data) {
+          setProduct(null)
+          setLoading(false)
+          return
+        }
+        
         setProduct(data)
         
         // Auto-select first variant if product has variants
-        if (data && data.hasVariants && data.variants && data.variants.length > 0) {
+        if (data.hasVariants && data.variants && data.variants.length > 0) {
           setSelectedVariant(data.variants[0])
         }
         
-        if (data) {
-          trackProductView(id)
-        }
+        trackProductView(id)
+      })
+      .catch((error) => {
+        console.error("Error loading product:", error)
+        setProduct(null)
       })
       .finally(() => setLoading(false))
   }, [id])
@@ -49,7 +57,7 @@ export default function ProductDetailPage() {
     // Determine the price based on whether variants exist
     const finalPrice = product.hasVariants && selectedVariant
       ? selectedVariant.price
-      : product.price
+      : product.price || 0
 
     const itemName = product.hasVariants && selectedVariant
       ? `${product.name} - ${selectedVariant.size}`
@@ -72,10 +80,10 @@ export default function ProductDetailPage() {
   const increaseQuantity = () => setQuantity(prev => prev + 1)
   const decreaseQuantity = () => setQuantity(prev => Math.max(1, prev - 1))
 
-  // Get current display price
+  // Get current display price - SAFE VERSION
   const displayPrice = product?.hasVariants && selectedVariant
-    ? selectedVariant.price
-    : product?.price || 0
+    ? (selectedVariant.price || 0)
+    : (product?.price || 0)
 
   if (loading) {
     return (
@@ -113,13 +121,12 @@ export default function ProductDetailPage() {
             className="space-y-4"
           >
             <div className="relative aspect-square rounded-3xl overflow-hidden bg-white border-2 border-gray-100 shadow-xl">
-              <img
+              <Image
                 src={product.image || "/placeholder.png"}
-                alt={product.name}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.src = "/placeholder.png"
-                }}
+                alt={product.name || "Product"}
+                fill
+                className="object-cover"
+                unoptimized={!product.image || !product.image.startsWith('http')}
               />
             </div>
           </motion.div>
@@ -132,9 +139,11 @@ export default function ProductDetailPage() {
           >
             {/* Category Badge */}
             <div className="flex items-center gap-2">
-              <span className="inline-block px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-semibold capitalize">
-                {product.category?.replace(/-/g, " ")}
-              </span>
+              {product.category && (
+                <span className="inline-block px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-semibold capitalize">
+                  {product.category.replace(/-/g, " ")}
+                </span>
+              )}
               {product.section && (
                 <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm capitalize">
                   {product.section.replace(/-/g, " ")}
@@ -144,7 +153,7 @@ export default function ProductDetailPage() {
 
             {/* Product Name */}
             <h1 className="text-3xl md:text-5xl font-black text-gray-900 leading-tight">
-              {product.name}
+              {product.name || "Unnamed Product"}
             </h1>
 
             {/* Rating */}
@@ -157,7 +166,7 @@ export default function ProductDetailPage() {
               <span className="text-sm text-gray-600">(4.9)</span>
             </div>
 
-            {/* Price */}
+            {/* Price - SAFE VERSION */}
             <div className="space-y-2">
               <motion.p
                 key={displayPrice}
@@ -166,7 +175,7 @@ export default function ProductDetailPage() {
                 transition={{ duration: 0.2 }}
                 className="text-4xl md:text-5xl font-black text-orange-600"
               >
-                £{displayPrice.toLocaleString()}
+                £{(displayPrice || 0).toLocaleString()}
               </motion.p>
               <p className="text-sm text-gray-500">Tax included. Shipping calculated at checkout.</p>
             </div>
@@ -197,7 +206,7 @@ export default function ProductDetailPage() {
                         )}
                         <div className="text-center">
                           <p className="font-bold">{variant.size}</p>
-                          <p className="text-xs mt-1">£{variant.price}</p>
+                          <p className="text-xs mt-1">£{(variant.price || 0).toLocaleString()}</p>
                         </div>
                       </button>
                     )
@@ -297,7 +306,7 @@ export default function ProductDetailPage() {
                 <ul className="space-y-2">
                   {product.variants.map((variant, i) => (
                     <li key={i} className="text-gray-600">
-                      <span className="font-medium text-gray-900">{variant.size}</span> - £{variant.price}
+                      <span className="font-medium text-gray-900">{variant.size}</span> - £{(variant.price || 0).toLocaleString()}
                     </li>
                   ))}
                 </ul>
