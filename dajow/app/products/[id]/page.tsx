@@ -70,17 +70,20 @@ function getColorHex(colorName: string): string {
   return COLOR_MAP[upper] || COLOR_MAP[colorName.trim()] || '#CCCCCC'
 }
 
-// FIXED: Proper TypeScript typing
+// FIXED: Explicit TypeScript-friendly implementation
 function parseVariants(variants: any[]): ProductVariant[] {
   if (!variants || !Array.isArray(variants)) return []
   
-  const parsed = variants.map(variant => {
+  const result: ProductVariant[] = []
+  
+  for (const variant of variants) {
     if (typeof variant === 'object' && (variant.size || variant.color) && variant.price) {
-      return {
+      result.push({
         size: variant.size ? String(variant.size) : undefined,
         color: variant.color ? String(variant.color) : undefined,
         price: Number(variant.price) || 0
-      }
+      })
+      continue
     }
     
     if (typeof variant === 'string') {
@@ -90,22 +93,19 @@ function parseVariants(variants: any[]): ProductVariant[] {
         const priceMatch = variant.match(/price:\s*([0-9.]+)/)
         
         if (priceMatch) {
-          return {
+          result.push({
             size: sizeMatch ? sizeMatch[1] : undefined,
             color: colorMatch ? colorMatch[1].trim() : undefined,
             price: Number(priceMatch[1]) || 0
-          }
+          })
         }
       } catch (e) {
         console.error('Error parsing variant:', variant, e)
       }
     }
-    
-    return null
-  })
+  }
   
-  // Properly filter out null values
-  return parsed.filter((v): v is ProductVariant => v !== null)
+  return result
 }
 
 export default function ProductDetailPage() {
