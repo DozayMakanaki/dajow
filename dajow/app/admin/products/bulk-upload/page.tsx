@@ -6,6 +6,13 @@ import { addProduct } from "@/lib/firestore-products"
 import { ArrowLeft, Upload, CheckCircle2, XCircle, FileJson, FileText, FileCode } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
+interface ProductVariant {
+  size?: string
+  color?: string
+  price: number
+  image?: string
+}
+
 interface BulkProduct {
   name: string
   price: number
@@ -14,6 +21,8 @@ interface BulkProduct {
   image: string
   description: string
   inStock: boolean
+  hasVariants?: boolean
+  variants?: ProductVariant[]
 }
 
 function generateSlug(name: string): string {
@@ -48,19 +57,30 @@ export default function BulkUploadPage() {
 
     for (const product of products) {
       try {
-        if (!product.name || !product.price || !product.category || !product.section || !product.image) {
+        if (!product.name || !product.category || !product.section) {
           throw new Error(`Missing required fields`)
         }
-        await addProduct({
+
+        const productData: any = {
           name: product.name,
           slug: generateSlug(product.name),
-          price: Number(product.price),
+          price: Number(product.price) || 0,
           category: product.category,
           section: product.section,
-          image: product.image,
+          image: product.image || "",
           description: product.description || "",
           inStock: product.inStock !== false,
-        })
+          hasVariants: product.hasVariants || false,
+        }
+
+        // Add variants if they exist
+        if (product.hasVariants && product.variants && Array.isArray(product.variants)) {
+          productData.variants = product.variants.filter(v => {
+            return (v.size || v.color) && v.price > 0
+          })
+        }
+
+        await addProduct(productData)
         success++
       } catch (error) {
         failed++
@@ -149,14 +169,35 @@ export default function BulkUploadPage() {
         inStock: true,
       },
       {
-        name: "Whole Milk",
-        price: 1.49,
-        category: "Dairy",
-        section: "dairy",
-        image: "https://example.com/milk.jpg",
-        description: "Fresh whole milk",
+        name: "Avtar Basmati Rice",
+        price: 11.5,
+        category: "african-foodstuff",
+        section: "popular",
+        image: "https://example.com/rice-5kg.jpg",
+        description: "High-quality basmati rice",
         inStock: true,
+        hasVariants: true,
+        variants: [
+          { size: "5kg", price: 11.5, image: "https://example.com/rice-5kg.jpg" },
+          { size: "10kg", price: 20.0, image: "https://example.com/rice-10kg.jpg" },
+          { size: "20kg", price: 38.0, image: "https://example.com/rice-20kg.jpg" }
+        ]
       },
+      {
+        name: "DAJOW Berets",
+        price: 15.99,
+        category: "accessories",
+        section: "popular",
+        image: "https://example.com/beret.jpg",
+        description: "Handcrafted berets in various colors",
+        inStock: true,
+        hasVariants: true,
+        variants: [
+          { color: "Black", price: 15.99, image: "https://example.com/beret-black.jpg" },
+          { color: "Red", price: 15.99, image: "https://example.com/beret-red.jpg" },
+          { color: "Royal Blue", price: 15.99, image: "https://example.com/beret-blue.jpg" }
+        ]
+      }
     ]
 
     let content = ""
@@ -167,9 +208,9 @@ export default function BulkUploadPage() {
       filename = "products-template.json"
     } else if (format === "csv") {
       const headers = ["name", "price", "category", "section", "image", "description", "inStock"]
-      const rows = sampleProducts.map(
-        (p) => `${p.name},${p.price},${p.category},${p.section},${p.image},${p.description},${p.inStock}`
-      )
+      const rows = sampleProducts
+        .filter(p => !p.hasVariants) // CSV doesn't support variants well
+        .map((p) => `${p.name},${p.price},${p.category},${p.section},${p.image},${p.description},${p.inStock}`)
       content = [headers.join(","), ...rows].join("\n")
       filename = "products-template.csv"
     } else {
@@ -223,7 +264,7 @@ export default function BulkUploadPage() {
               className="flex items-center gap-2 px-4 py-2.5 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm font-medium hover:bg-green-100 transition"
             >
               <FileText className="h-4 w-4" />
-              CSV Template
+              CSV Template (Simple products only)
             </button>
             <button
               onClick={() => downloadTemplate("ts")}
@@ -316,12 +357,12 @@ export default function BulkUploadPage() {
         )}
 
         {/* Required Fields Reference */}
-        <div className="bg-white rounded-xl shadow-sm border p-6">
+        <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
           <h3 className="text-sm font-semibold text-gray-900 mb-3">Required Fields</h3>
           <div className="grid sm:grid-cols-2 gap-2">
             {[
               { field: "name", desc: "Product name" },
-              { field: "price", desc: "Price in GBP (number, e.g. 9.99)" },
+              { field: "price", desc: "Base price in GBP (number, e.g. 9.99)" },
               { field: "category", desc: "Product category" },
               { field: "section", desc: "popular, fresh, dairy, meat, pantry, snacks, wigs" },
               { field: "image", desc: "Direct image URL (https://...)" },
@@ -336,13 +377,56 @@ export default function BulkUploadPage() {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Variants Guide */}
+        <div className="bg-white rounded-xl shadow-sm border p-6">
+          <h3 className="text-sm font-semibold text-gray-900 mb-3">Adding Variants (JSON/TypeScript only)</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            To add products with size or color variants, include the following fields:
+          </p>
+          
+          <div className="bg-gray-50 rounded-lg p-4 mb-4">
+            <code className="text-xs font-mono block whitespace-pre text-gray-800">{`{
+  "name": "Avtar Basmati Rice",
+  "price": 11.5,
+  "category": "african-foodstuff",
+  "section": "popular",
+  "image": "https://example.com/rice.jpg",
+  "description": "Premium basmati rice",
+  "inStock": true,
+  "hasVariants": true,
+  "variants": [
+    {
+      "size": "5kg",
+      "price": 11.5,
+      "image": "https://example.com/rice-5kg.jpg"
+    },
+    {
+      "size": "10kg",
+      "price": 20.0,
+      "image": "https://example.com/rice-10kg.jpg"
+    }
+  ]
+}`}</code>
+          </div>
+
+          <div className="space-y-2 text-sm">
+            <p className="font-semibold text-gray-900">Variant Fields:</p>
+            <ul className="space-y-1 text-gray-600">
+              <li>• <code className="text-orange-600 font-mono text-xs">size</code> - Use for size-based variants (e.g., "5kg", "10kg")</li>
+              <li>• <code className="text-orange-600 font-mono text-xs">color</code> - Use for color-based variants (e.g., "Black", "Red")</li>
+              <li>• <code className="text-orange-600 font-mono text-xs">price</code> - Required for each variant</li>
+              <li>• <code className="text-orange-600 font-mono text-xs">image</code> - Optional, variant-specific image URL</li>
+            </ul>
+          </div>
 
           <div className="mt-4 pt-4 border-t">
-            <p className="text-xs font-semibold text-orange-800 mb-2">💡 Where to get image URLs:</p>
-            <ul className="text-xs text-gray-500 space-y-1">
-              <li>• <strong className="text-gray-700">Google Images</strong> → right-click image → "Copy image address"</li>
-              <li>• <strong className="text-gray-700">Unsplash.com</strong> → free high-quality photos, right-click → copy</li>
-              <li>• <strong className="text-gray-700">Imgur.com</strong> → upload your own, copy the direct link</li>
+            <p className="text-xs font-semibold text-blue-800 mb-2">💡 Tips:</p>
+            <ul className="text-xs text-gray-600 space-y-1">
+              <li>• Use either <code className="text-orange-600">size</code> OR <code className="text-orange-600">color</code> in each variant, not both</li>
+              <li>• Variant images are optional - if not provided, the main product image is used</li>
+              <li>• CSV format doesn't support variants - use JSON or TypeScript for products with variants</li>
             </ul>
           </div>
         </div>
