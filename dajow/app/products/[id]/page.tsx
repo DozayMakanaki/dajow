@@ -14,6 +14,7 @@ interface ProductVariant {
   size?: string
   color?: string
   price: number
+  image?: string
 }
 
 // Enhanced color mapping
@@ -70,7 +71,7 @@ function getColorHex(colorName: string): string {
   return COLOR_MAP[upper] || COLOR_MAP[colorName.trim()] || '#CCCCCC'
 }
 
-// FIXED: Explicit TypeScript-friendly implementation
+// Updated to include image field
 function parseVariants(variants: any[]): ProductVariant[] {
   if (!variants || !Array.isArray(variants)) return []
   
@@ -81,7 +82,8 @@ function parseVariants(variants: any[]): ProductVariant[] {
       result.push({
         size: variant.size ? String(variant.size) : undefined,
         color: variant.color ? String(variant.color) : undefined,
-        price: Number(variant.price) || 0
+        price: Number(variant.price) || 0,
+        image: variant.image ? String(variant.image) : undefined
       })
       continue
     }
@@ -91,12 +93,14 @@ function parseVariants(variants: any[]): ProductVariant[] {
         const sizeMatch = variant.match(/size:\s*["']?([^"'\s]+)["']?/)
         const colorMatch = variant.match(/color:\s*["']?([^"',]+)["']?/i)
         const priceMatch = variant.match(/price:\s*([0-9.]+)/)
+        const imageMatch = variant.match(/image:\s*["']?([^"']+)["']?/)
         
         if (priceMatch) {
           result.push({
             size: sizeMatch ? sizeMatch[1] : undefined,
             color: colorMatch ? colorMatch[1].trim() : undefined,
-            price: Number(priceMatch[1]) || 0
+            price: Number(priceMatch[1]) || 0,
+            image: imageMatch ? imageMatch[1] : undefined
           })
         }
       } catch (e) {
@@ -196,6 +200,11 @@ export default function ProductDetailPage() {
     ? selectedVariant.price
     : (Number(product?.price) || 0)
 
+  // Get display image - prioritize variant image, then product image
+  const displayImage = product?.hasVariants && selectedVariant?.image
+    ? selectedVariant.image
+    : product?.image || "/placeholder.png"
+
   const hasColors = parsedVariants.length > 0 && parsedVariants.some(v => v.color)
   const hasSizes = parsedVariants.length > 0 && parsedVariants.some(v => v.size)
 
@@ -257,19 +266,25 @@ export default function ProductDetailPage() {
       <div className="max-w-7xl mx-auto px-4 py-8 lg:py-12">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-16">
           
-          {/* Product Image */}
+          {/* Product Image - Now changes with variant */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="lg:sticky lg:top-24 h-fit"
           >
-            <div className="relative aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-50 shadow-2xl">
+            <motion.div 
+              key={displayImage}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+              className="relative aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-50 shadow-2xl"
+            >
               <Image
-                src={product.image || "/placeholder.png"}
+                src={displayImage}
                 alt={product.name || "Product"}
                 fill
                 className="object-cover"
-                unoptimized={!product.image || !product.image.startsWith('http')}
+                unoptimized={!displayImage.startsWith('http')}
               />
               
               {product.section && (
@@ -279,7 +294,7 @@ export default function ProductDetailPage() {
                   </span>
                 </div>
               )}
-            </div>
+            </motion.div>
 
             {/* Trust Badges */}
             <div className="mt-6 flex flex-wrap gap-3">
