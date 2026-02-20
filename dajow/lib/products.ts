@@ -10,6 +10,8 @@ export type Product = {
   section?: string
   searchKeywords?: string[]
   description?: string
+  slug?: string
+  inStock?: boolean
   
   // Popularity tracking fields
   views?: number
@@ -18,10 +20,11 @@ export type Product = {
   lastViewed?: Date | null
   lastOrdered?: Date | null
   
-  // Variant support (for products with multiple sizes/prices)
+  // Variant support (for products with multiple sizes/colors/prices)
   hasVariants?: boolean
   variants?: Array<{
-    size: string
+    size?: string
+    color?: string
     price: number
     image?: string
   }>
