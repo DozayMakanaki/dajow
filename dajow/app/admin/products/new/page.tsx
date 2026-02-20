@@ -4,11 +4,18 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { addProduct } from "@/lib/firestore-products"
 import Image from "next/image"
-import { Save, ArrowLeft, Loader2, Link as LinkIcon, X } from "lucide-react"
+import { Save, ArrowLeft, Loader2, Link as LinkIcon, X, Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+
+interface ProductVariant {
+  size?: string
+  color?: string
+  price: number
+  image?: string
+}
 
 function generateSlug(name: string): string {
   return name
@@ -26,6 +33,11 @@ export default function NewProductPage() {
   const [imageUrlInput, setImageUrlInput] = useState("")
   const [imageError, setImageError] = useState(false)
 
+  // Variants state
+  const [hasVariants, setHasVariants] = useState(false)
+  const [variants, setVariants] = useState<ProductVariant[]>([])
+  const [variantType, setVariantType] = useState<"size" | "color">("size")
+
   function handleUrlInput(val: string) {
     setImageUrlInput(val)
     setImageError(false)
@@ -38,13 +50,45 @@ export default function NewProductPage() {
     setImageError(false)
   }
 
+  // Variant management functions
+  function addVariant() {
+    const newVariant: ProductVariant = {
+      [variantType]: "",
+      price: 0,
+      image: ""
+    }
+    setVariants([...variants, newVariant])
+  }
+
+  function removeVariant(index: number) {
+    setVariants(variants.filter((_, i) => i !== index))
+  }
+
+  function updateVariant(index: number, field: keyof ProductVariant, value: string | number) {
+    const updated = [...variants]
+    if (field === 'price') {
+      updated[index][field] = Number(value)
+    } else {
+      // @ts-ignore
+      updated[index][field] = value
+    }
+    setVariants(updated)
+  }
+
+  function toggleHasVariants(enabled: boolean) {
+    setHasVariants(enabled)
+    if (enabled && variants.length === 0) {
+      addVariant()
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const form = e.currentTarget
     const data = new FormData(form)
     const name = data.get("name") as string
 
-    if (!imageUrl) {
+    if (!imageUrl && !hasVariants) {
       alert("Please provide an image URL")
       return
     }
@@ -52,7 +96,7 @@ export default function NewProductPage() {
     setSaving(true)
 
     try {
-      await addProduct({
+      const productData: any = {
         name,
         slug: generateSlug(name),
         price: Number(data.get("price")),
@@ -61,7 +105,18 @@ export default function NewProductPage() {
         image: imageUrl,
         description: data.get("description") as string,
         inStock: data.get("inStock") === "on",
-      })
+        hasVariants: hasVariants
+      }
+
+      // Add variants if enabled
+      if (hasVariants && variants.length > 0) {
+        productData.variants = variants.filter(v => {
+          const hasRequiredField = variantType === "size" ? v.size : v.color
+          return hasRequiredField && v.price > 0
+        })
+      }
+
+      await addProduct(productData)
 
       alert("✅ Product added successfully")
       router.push("/admin/products")
@@ -114,7 +169,7 @@ export default function NewProductPage() {
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <Label htmlFor="price" className="text-sm font-semibold mb-2">
-                  Price (£) *
+                  {hasVariants ? "Base Price (£)" : "Price (£) *"}
                 </Label>
                 <Input
                   id="price"
@@ -123,8 +178,13 @@ export default function NewProductPage() {
                   step="0.01"
                   placeholder="e.g., 9.99"
                   className="h-12"
-                  required
+                  required={!hasVariants}
                 />
+                {hasVariants && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    This is the fallback price. Variants will have their own prices.
+                  </p>
+                )}
               </div>
               <div>
                 <Label htmlFor="category" className="text-sm font-semibold mb-2">
@@ -195,9 +255,13 @@ export default function NewProductPage() {
           {/* Image Card */}
           <div className="bg-white rounded-xl shadow-sm border p-6 space-y-5">
             <div>
-              <Label className="text-sm font-semibold">Product Image *</Label>
+              <Label className="text-sm font-semibold">
+                Product Image {!hasVariants && "*"}
+              </Label>
               <p className="text-sm text-gray-500 mt-1">
-                Paste a direct image URL from any source (Google, Unsplash, your CDN, etc.)
+                {hasVariants 
+                  ? "This is the default/fallback image. You can set specific images for each variant below."
+                  : "Paste a direct image URL from any source"}
               </p>
             </div>
 
@@ -254,17 +318,167 @@ export default function NewProductPage() {
                 </div>
               </div>
             )}
+          </div>
 
-            {/* Tips */}
-            <div className="bg-orange-50 border border-orange-100 rounded-lg p-4">
-              <p className="text-xs font-semibold text-orange-800 mb-2">💡 Where to get image URLs:</p>
-              <ul className="text-xs text-orange-700 space-y-1">
-                <li>• <strong>Google Images</strong> → right-click image → "Copy image address"</li>
-               
-                <li>• <strong>Imgur.com</strong> → upload your own, copy the direct link</li>
-                <li>• <strong>Firebase Storage</strong> → upload manually, copy the download URL</li>
-              </ul>
+          {/* Variants Card */}
+          <div className="bg-white rounded-xl shadow-sm border p-6 space-y-6">
+            <div className="flex items-start justify-between">
+              <div>
+                <Label className="text-sm font-semibold">Product Variants</Label>
+                <p className="text-sm text-gray-500 mt-1">
+                  Add different sizes or colors with unique prices and images
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="hasVariants"
+                  checked={hasVariants}
+                  onChange={(e) => toggleHasVariants(e.target.checked)}
+                  className="w-5 h-5 text-orange-600 rounded focus:ring-orange-500"
+                />
+                <Label htmlFor="hasVariants" className="text-sm font-medium cursor-pointer">
+                  Enable Variants
+                </Label>
+              </div>
             </div>
+
+            {hasVariants && (
+              <div className="space-y-6">
+                {/* Variant Type Selector */}
+                <div className="flex gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      id="variantSize"
+                      checked={variantType === "size"}
+                      onChange={() => setVariantType("size")}
+                      className="w-4 h-4 text-orange-600"
+                    />
+                    <Label htmlFor="variantSize" className="text-sm cursor-pointer">
+                      Size Variants (e.g., 5kg, 10kg, 20kg)
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      id="variantColor"
+                      checked={variantType === "color"}
+                      onChange={() => setVariantType("color")}
+                      className="w-4 h-4 text-orange-600"
+                    />
+                    <Label htmlFor="variantColor" className="text-sm cursor-pointer">
+                      Color Variants (e.g., Black, Red, Blue)
+                    </Label>
+                  </div>
+                </div>
+
+                {/* Variant List */}
+                <div className="space-y-4">
+                  {variants.map((variant, index) => (
+                    <div key={index} className="p-4 border-2 border-gray-200 rounded-xl space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold text-gray-900">
+                          Variant {index + 1}
+                        </h4>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeVariant(index)}
+                          className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-4">
+                        {/* Size or Color */}
+                        <div>
+                          <Label className="text-xs font-semibold mb-2">
+                            {variantType === "size" ? "Size *" : "Color *"}
+                          </Label>
+                          <Input
+                            value={variant[variantType] || ""}
+                            onChange={(e) => updateVariant(index, variantType, e.target.value)}
+                            placeholder={variantType === "size" ? "e.g., 5kg" : "e.g., Black"}
+                            className="h-10"
+                          />
+                        </div>
+
+                        {/* Price */}
+                        <div>
+                          <Label className="text-xs font-semibold mb-2">
+                            Price (£) *
+                          </Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={variant.price || ""}
+                            onChange={(e) => updateVariant(index, "price", e.target.value)}
+                            placeholder="e.g., 9.99"
+                            className="h-10"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Variant Image */}
+                      <div>
+                        <Label className="text-xs font-semibold mb-2">
+                          Variant Image (Optional)
+                        </Label>
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400" />
+                            <Input
+                              value={variant.image || ""}
+                              onChange={(e) => updateVariant(index, "image", e.target.value)}
+                              placeholder="https://example.com/variant-image.jpg"
+                              className="h-10 pl-9 text-sm"
+                            />
+                          </div>
+                        </div>
+                        {variant.image && (
+                          <div className="mt-3 rounded-lg overflow-hidden border w-24 h-24">
+                            <div className="relative w-full h-full">
+                              <Image
+                                src={variant.image}
+                                alt="Variant preview"
+                                fill
+                                className="object-cover"
+                                unoptimized
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Add Variant Button */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addVariant}
+                  className="w-full h-12 border-2 border-dashed border-gray-300 hover:border-orange-500 hover:bg-orange-50"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add {variantType === "size" ? "Size" : "Color"} Variant
+                </Button>
+
+                {/* Variants Info */}
+                <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
+                  <p className="text-xs font-semibold text-blue-800 mb-2">💡 Variant Tips:</p>
+                  <ul className="text-xs text-blue-700 space-y-1">
+                    <li>• Each variant can have its own price and image</li>
+                    <li>• Users will see color boxes or size buttons based on your choice</li>
+                    <li>• The product image changes when users select different variants</li>
+                    <li>• If no variant image is provided, the default product image is used</li>
+                  </ul>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}
