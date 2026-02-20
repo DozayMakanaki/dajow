@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
-import { getProductById, updateProduct } from "@/lib/firestore-products"
+import { getProductById } from "@/lib/products"
+import { updateProduct } from "@/lib/firestore-products"
 import Image from "next/image"
 import { Save, ArrowLeft, Loader2, Link as LinkIcon, X, Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
