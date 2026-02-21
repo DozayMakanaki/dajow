@@ -3,12 +3,15 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { getProducts, type Product } from "@/lib/products"
-import { Filter, X, Grid3x3, LayoutGrid, ChevronRight, Search, ArrowLeft, ShoppingBag } from "lucide-react"
+import { Filter, X, Grid3x3, LayoutGrid, ChevronRight, Search, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { motion, AnimatePresence } from "framer-motion"
 
-const WIGS_CATEGORY = "wigs"
+// Category groupings
+const FOOD_CATEGORIES = ["african-foodstuff", "grains", "pantry"]
+const MEAT_FISH_CATEGORIES = ["meat", "fish"]
+const WIGS_CATEGORIES = ["wigs", "accessories"]
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -33,10 +36,13 @@ export default function ProductsPage() {
   const [viewMode, setViewMode] = useState<"grid" | "compact">("grid")
   const [searchQuery, setSearchQuery] = useState("")
 
-  const [foodCategory, setFoodCategory] = useState<string | null>(null)
-  const [wigsSection, setWigsSection] = useState<string | null>(null)
+  // Active filters for each section
+  const [foodFilter, setFoodFilter] = useState<string | null>(null)
+  const [meatFishFilter, setMeatFishFilter] = useState<string | null>(null)
+  const [wigsFilter, setWigsFilter] = useState<string | null>(null)
 
   const [foodSheetOpen, setFoodSheetOpen] = useState(false)
+  const [meatFishSheetOpen, setMeatFishSheetOpen] = useState(false)
   const [wigsSheetOpen, setWigsSheetOpen] = useState(false)
 
   useEffect(() => {
@@ -56,16 +62,18 @@ export default function ProductsPage() {
     )
   }
 
-  const foodProducts = products.filter(p => p.category !== WIGS_CATEGORY)
-  const wigsProducts = products.filter(p => p.category === WIGS_CATEGORY)
+  // Group products by section
+  const foodProducts = products.filter(p => FOOD_CATEGORIES.includes(p.category || ""))
+  const meatFishProducts = products.filter(p => MEAT_FISH_CATEGORIES.includes(p.category || ""))
+  const wigsProducts = products.filter(p => WIGS_CATEGORIES.includes(p.category || ""))
 
   const foodCategories = [...new Set(foodProducts.map(p => p.category).filter(Boolean))] as string[]
-  const wigsSections   = [...new Set(wigsProducts.map(p => p.section).filter(Boolean))] as string[]
+  const meatFishCategories = [...new Set(meatFishProducts.map(p => p.category).filter(Boolean))] as string[]
+  const wigsCategories = [...new Set(wigsProducts.map(p => p.category).filter(Boolean))] as string[]
 
-  function applyFiltersAndSort(list: Product[], catFilter: string | null, secFilter: string | null) {
+  function applyFiltersAndSort(list: Product[], filter: string | null) {
     let filtered = list.filter(p => {
-      if (catFilter && p.category !== catFilter) return false
-      if (secFilter && p.section !== secFilter) return false
+      if (filter && p.category !== filter) return false
       if (searchQuery && !p.name.toLowerCase().includes(searchQuery.toLowerCase())) return false
       return true
     })
@@ -79,17 +87,9 @@ export default function ProductsPage() {
     })
   }
 
-  const filteredFood = applyFiltersAndSort(foodProducts, foodCategory, null)
-  const filteredWigs = applyFiltersAndSort(wigsProducts, null, wigsSection)
-
-  function clearFood() {
-    setFoodCategory(null)
-    setFoodSheetOpen(false)
-  }
-  function clearWigs() {
-    setWigsSection(null)
-    setWigsSheetOpen(false)
-  }
+  const filteredFood = applyFiltersAndSort(foodProducts, foodFilter)
+  const filteredMeatFish = applyFiltersAndSort(meatFishProducts, meatFishFilter)
+  const filteredWigs = applyFiltersAndSort(wigsProducts, wigsFilter)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -99,15 +99,13 @@ export default function ProductsPage() {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             
-            {/* Left: Title + Count */}
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-gray-900">All Products</h1>
               <p className="text-xs text-gray-500">
-                {products.length} items · {foodProducts.length} groceries · {wigsProducts.length} beauty
+                {products.length} items · {foodProducts.length} food · {meatFishProducts.length} meat/fish · {wigsProducts.length} beauty
               </p>
             </div>
 
-            {/* Right: Controls */}
             <div className="flex items-center gap-2">
               <select
                 value={sortBy}
@@ -155,291 +153,266 @@ export default function ProductsPage() {
 
       <div className="max-w-7xl mx-auto px-4 pb-20 pt-8">
 
-        {/* ─── FOOD & GROCERIES SECTION ─────────────────────────────────── */}
-        <div className="mb-16">
-          {/* Section Header */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-            <div>
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">
-                Food & Groceries
-              </h2>
-              <p className="text-sm text-gray-500">
-                {filteredFood.length} products
-                {foodCategory && (
-                  <span className="ml-2 text-orange-600 font-medium">
-                    in "{foodCategory.replace(/-/g, " ")}"
-                  </span>
-                )}
-              </p>
-            </div>
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/* FOOD & GROCERIES SECTION */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {foodProducts.length > 0 && (
+          <>
+            <ProductSection
+              title="Food & Groceries"
+              subtitle="Rice, grains, pantry essentials & more"
+              products={filteredFood}
+              categories={foodCategories}
+              activeFilter={foodFilter}
+              setActiveFilter={setFoodFilter}
+              sheetOpen={foodSheetOpen}
+              setSheetOpen={setFoodSheetOpen}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              viewMode={viewMode}
+            />
 
-            <div className="flex items-center gap-2">
-              <Sheet open={foodSheetOpen} onOpenChange={setFoodSheetOpen}>
-                <SheetTrigger asChild>
-                  <Button variant="outline" size="sm" className="relative">
-                    <Filter className="h-4 w-4 mr-2" />
-                    Filter
-                    {foodCategory && (
-                      <span className="absolute -top-1 -right-1 bg-orange-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
-                        1
-                      </span>
-                    )}
-                  </Button>
-                </SheetTrigger>
-
-                <SheetContent side="left" className="w-full max-w-sm p-0 flex flex-col [&>button:first-child]:hidden">
-                  <div className="flex items-center gap-3 px-4 py-4 border-b bg-white sticky top-0 z-10">
-                    <button
-                      onClick={() => setFoodSheetOpen(false)}
-                      className="p-2 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors -ml-1"
-                    >
-                      <ArrowLeft className="h-5 w-5 text-gray-700" />
-                    </button>
-                    <div className="flex-1">
-                      <p className="font-bold text-gray-900">Filter Food</p>
-                      {foodCategory && <p className="text-xs text-orange-600">1 filter active</p>}
-                    </div>
-                    {foodCategory && (
-                      <button onClick={clearFood} className="text-xs font-semibold text-red-500 hover:text-red-700">
-                        Clear
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Categories</p>
-
-                    <button
-                      onClick={clearFood}
-                      className={`w-full text-left px-4 py-4 rounded-xl font-semibold transition-all ${
-                        !foodCategory ? "bg-orange-600 text-white shadow-md" : "bg-gray-50 text-gray-700 hover:bg-orange-50"
-                      }`}
-                    >
-                      All Categories
-                    </button>
-
-                    {foodCategories.map(cat => (
-                      <button
-                        key={cat}
-                        onClick={() => {
-                          setFoodCategory(cat === foodCategory ? null : cat)
-                          setFoodSheetOpen(false)
-                        }}
-                        className={`w-full text-left px-4 py-4 rounded-xl capitalize font-medium transition-all ${
-                          foodCategory === cat ? "bg-orange-600 text-white shadow-md" : "bg-gray-50 text-gray-700 hover:bg-orange-50"
-                        }`}
-                      >
-                        {cat.replace(/-/g, " ")}
-                      </button>
-                    ))}
-                  </div>
-                </SheetContent>
-              </Sheet>
-
-              <div className="hidden md:block relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="pl-9 pr-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 w-48 bg-white"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Active Filter Chip */}
-          <AnimatePresence>
-            {foodCategory && (
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="flex items-center gap-2 mb-4"
-              >
-                <button
-                  onClick={clearFood}
-                  className="flex items-center gap-2 bg-orange-100 text-orange-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-orange-200 transition-colors"
-                >
-                  {foodCategory.replace(/-/g, " ")}
-                  <X className="h-4 w-4" />
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Desktop Category Pills */}
-          {foodCategories.length > 0 && (
-            <div className="hidden md:flex flex-wrap gap-2 mb-6">
-              <button
-                onClick={clearFood}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  !foodCategory ? "bg-orange-600 text-white" : "bg-white border text-gray-600 hover:border-orange-400"
-                }`}
-              >
-                All
-              </button>
-              {foodCategories.map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setFoodCategory(cat === foodCategory ? null : cat)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium capitalize transition-all ${
-                    foodCategory === cat ? "bg-orange-600 text-white" : "bg-white border text-gray-600 hover:border-orange-400"
-                  }`}
-                >
-                  {cat.replace(/-/g, " ")}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Products Grid */}
-          {filteredFood.length === 0 ? <EmptyState onClear={clearFood} /> : <ProductGrid products={filteredFood} viewMode={viewMode} />}
-        </div>
-
-        {/* ─── SECTION DIVIDER ──────────────────────────────────────────── */}
-        {wigsProducts.length > 0 && (
-          <div className="relative my-16">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
-            </div>
-          </div>
+            <SectionDivider />
+          </>
         )}
 
-        {/* ─── WIGS & BEAUTY SECTION ────────────────────────────────────── */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/* MEAT & FISH SECTION */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {meatFishProducts.length > 0 && (
+          <>
+            <ProductSection
+              title="Meat & Fish"
+              subtitle="Fresh poultry, beef, and seafood"
+              products={filteredMeatFish}
+              categories={meatFishCategories}
+              activeFilter={meatFishFilter}
+              setActiveFilter={setMeatFishFilter}
+              sheetOpen={meatFishSheetOpen}
+              setSheetOpen={setMeatFishSheetOpen}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              viewMode={viewMode}
+            />
+
+            <SectionDivider />
+          </>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/* WIGS & BEAUTY SECTION */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
         {wigsProducts.length > 0 && (
-          <div>
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-              <div>
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">
-                  Wigs & Beauty
-                </h2>
-                <p className="text-sm text-gray-500">
-                  {filteredWigs.length} products
-                  {wigsSection && (
-                    <span className="ml-2 text-orange-600 font-medium">
-                      in "{wigsSection.replace(/-/g, " ")}"
-                    </span>
-                  )}
-                </p>
-              </div>
-
-              {wigsSections.length > 0 && (
-                <Sheet open={wigsSheetOpen} onOpenChange={setWigsSheetOpen}>
-                  <SheetTrigger asChild>
-                    <Button variant="outline" size="sm" className="relative">
-                      <Filter className="h-4 w-4 mr-2" />
-                      Filter
-                      {wigsSection && (
-                        <span className="absolute -top-1 -right-1 bg-orange-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
-                          1
-                        </span>
-                      )}
-                    </Button>
-                  </SheetTrigger>
-
-                  <SheetContent side="left" className="w-full max-w-sm p-0 flex flex-col [&>button:first-child]:hidden">
-                    <div className="flex items-center gap-3 px-4 py-4 border-b bg-white sticky top-0 z-10">
-                      <button
-                        onClick={() => setWigsSheetOpen(false)}
-                        className="p-2 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors -ml-1"
-                      >
-                        <ArrowLeft className="h-5 w-5 text-gray-700" />
-                      </button>
-                      <div className="flex-1">
-                        <p className="font-bold text-gray-900">Filter Wigs & Hair</p>
-                        {wigsSection && <p className="text-xs text-orange-600">1 filter active</p>}
-                      </div>
-                      {wigsSection && (
-                        <button onClick={clearWigs} className="text-xs font-semibold text-red-500 hover:text-red-700">
-                          Clear
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Sections</p>
-
-                      <button
-                        onClick={clearWigs}
-                        className={`w-full text-left px-4 py-4 rounded-xl font-semibold transition-all ${
-                          !wigsSection ? "bg-orange-600 text-white shadow-md" : "bg-gray-50 text-gray-700 hover:bg-orange-50"
-                        }`}
-                      >
-                        All Sections
-                      </button>
-
-                      {wigsSections.map(sec => (
-                        <button
-                          key={sec}
-                          onClick={() => {
-                            setWigsSection(sec === wigsSection ? null : sec)
-                            setWigsSheetOpen(false)
-                          }}
-                          className={`w-full text-left px-4 py-4 rounded-xl capitalize font-medium transition-all ${
-                            wigsSection === sec ? "bg-orange-600 text-white shadow-md" : "bg-gray-50 text-gray-700 hover:bg-orange-50"
-                          }`}
-                        >
-                          {sec.replace(/-/g, " ")}
-                        </button>
-                      ))}
-                    </div>
-                  </SheetContent>
-                </Sheet>
-              )}
-            </div>
-
-            {/* Active Filter Chip */}
-            <AnimatePresence>
-              {wigsSection && (
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="flex items-center gap-2 mb-4"
-                >
-                  <button
-                    onClick={clearWigs}
-                    className="flex items-center gap-2 bg-orange-100 text-orange-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-orange-200 transition-colors"
-                  >
-                    {wigsSection.replace(/-/g, " ")}
-                    <X className="h-4 w-4" />
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Desktop Section Pills */}
-            {wigsSections.length > 0 && (
-              <div className="hidden md:flex flex-wrap gap-2 mb-6">
-                <button
-                  onClick={clearWigs}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                    !wigsSection ? "bg-orange-600 text-white" : "bg-white border text-gray-600 hover:border-orange-400"
-                  }`}
-                >
-                  All
-                </button>
-                {wigsSections.map(sec => (
-                  <button
-                    key={sec}
-                    onClick={() => setWigsSection(sec === wigsSection ? null : sec)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium capitalize transition-all ${
-                      wigsSection === sec ? "bg-orange-600 text-white" : "bg-white border text-gray-600 hover:border-orange-400"
-                    }`}
-                  >
-                    {sec.replace(/-/g, " ")}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Products Grid */}
-            {filteredWigs.length === 0 ? <EmptyState onClear={clearWigs} /> : <ProductGrid products={filteredWigs} viewMode={viewMode} />}
-          </div>
+          <ProductSection
+            title="Wigs & Beauty"
+            subtitle="Hair extensions, wigs & accessories"
+            products={filteredWigs}
+            categories={wigsCategories}
+            activeFilter={wigsFilter}
+            setActiveFilter={setWigsFilter}
+            sheetOpen={wigsSheetOpen}
+            setSheetOpen={setWigsSheetOpen}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            viewMode={viewMode}
+          />
         )}
       </div>
+    </div>
+  )
+}
+
+// ─── Section Divider Component ────────────────────────────────────────────────
+function SectionDivider() {
+  return (
+    <div className="relative my-16">
+      <div className="absolute inset-0 flex items-center">
+        <div className="w-full border-t-2 border-gray-200" />
+      </div>
+      <div className="relative flex justify-center">
+        <div className="bg-gray-50 px-6">
+          <div className="w-2 h-2 bg-gray-300 rounded-full" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Product Section Component ────────────────────────────────────────────────
+interface ProductSectionProps {
+  title: string
+  subtitle: string
+  products: Product[]
+  categories: string[]
+  activeFilter: string | null
+  setActiveFilter: (filter: string | null) => void
+  sheetOpen: boolean
+  setSheetOpen: (open: boolean) => void
+  searchQuery: string
+  setSearchQuery: (query: string) => void
+  viewMode: "grid" | "compact"
+}
+
+function ProductSection({
+  title,
+  subtitle,
+  products,
+  categories,
+  activeFilter,
+  setActiveFilter,
+  sheetOpen,
+  setSheetOpen,
+  searchQuery,
+  setSearchQuery,
+  viewMode
+}: ProductSectionProps) {
+  
+  function clearFilter() {
+    setActiveFilter(null)
+    setSheetOpen(false)
+  }
+
+  return (
+    <div className="mb-16">
+      {/* Section Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <div>
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">{title}</h2>
+          <p className="text-sm text-gray-500">
+            {subtitle} · {products.length} products
+            {activeFilter && (
+              <span className="ml-2 text-orange-600 font-medium">
+                in "{activeFilter.replace(/-/g, " ")}"
+              </span>
+            )}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {categories.length > 1 && (
+            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="sm" className="relative">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filter
+                  {activeFilter && (
+                    <span className="absolute -top-1 -right-1 bg-orange-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                      1
+                    </span>
+                  )}
+                </Button>
+              </SheetTrigger>
+
+              <SheetContent side="left" className="w-full max-w-sm p-0 flex flex-col [&>button:first-child]:hidden">
+                <div className="flex items-center gap-3 px-4 py-4 border-b bg-white sticky top-0 z-10">
+                  <button
+                    onClick={() => setSheetOpen(false)}
+                    className="p-2 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors -ml-1"
+                  >
+                    <ArrowLeft className="h-5 w-5 text-gray-700" />
+                  </button>
+                  <div className="flex-1">
+                    <p className="font-bold text-gray-900">Filter {title}</p>
+                    {activeFilter && <p className="text-xs text-orange-600">1 filter active</p>}
+                  </div>
+                  {activeFilter && (
+                    <button onClick={clearFilter} className="text-xs font-semibold text-red-500 hover:text-red-700">
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Categories</p>
+
+                  <button
+                    onClick={clearFilter}
+                    className={`w-full text-left px-4 py-4 rounded-xl font-semibold transition-all ${
+                      !activeFilter ? "bg-orange-600 text-white shadow-md" : "bg-gray-50 text-gray-700 hover:bg-orange-50"
+                    }`}
+                  >
+                    All Categories
+                  </button>
+
+                  {categories.map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => {
+                        setActiveFilter(cat === activeFilter ? null : cat)
+                        setSheetOpen(false)
+                      }}
+                      className={`w-full text-left px-4 py-4 rounded-xl capitalize font-medium transition-all ${
+                        activeFilter === cat ? "bg-orange-600 text-white shadow-md" : "bg-gray-50 text-gray-700 hover:bg-orange-50"
+                      }`}
+                    >
+                      {cat.replace(/-/g, " ")}
+                    </button>
+                  ))}
+                </div>
+              </SheetContent>
+            </Sheet>
+          )}
+
+          <div className="hidden md:block relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="pl-9 pr-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 w-48 bg-white"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Active Filter Chip */}
+      <AnimatePresence>
+        {activeFilter && (
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="flex items-center gap-2 mb-4"
+          >
+            <button
+              onClick={clearFilter}
+              className="flex items-center gap-2 bg-orange-100 text-orange-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-orange-200 transition-colors"
+            >
+              {activeFilter.replace(/-/g, " ")}
+              <X className="h-4 w-4" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Desktop Category Pills */}
+      {categories.length > 1 && (
+        <div className="hidden md:flex flex-wrap gap-2 mb-6">
+          <button
+            onClick={clearFilter}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              !activeFilter ? "bg-orange-600 text-white" : "bg-white border text-gray-600 hover:border-orange-400"
+            }`}
+          >
+            All
+          </button>
+          {categories.map(cat => (
+            <button
+              key={cat}
+              onClick={() => setActiveFilter(cat === activeFilter ? null : cat)}
+              className={`px-4 py-2 rounded-full text-sm font-medium capitalize transition-all ${
+                activeFilter === cat ? "bg-orange-600 text-white" : "bg-white border text-gray-600 hover:border-orange-400"
+              }`}
+            >
+              {cat.replace(/-/g, " ")}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Products Grid */}
+      {products.length === 0 ? <EmptyState onClear={clearFilter} /> : <ProductGrid products={products} viewMode={viewMode} />}
     </div>
   )
 }
