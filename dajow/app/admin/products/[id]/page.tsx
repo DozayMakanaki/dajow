@@ -284,6 +284,7 @@ export default function EditProductPage() {
                 <option value="pantry">Pantry</option>
                 <option value="snacks">Snacks</option>
                 <option value="wigs">Wigs</option>
+                <option value="soap">Soap & Personal Care</option>
               </select>
             </div>
 
