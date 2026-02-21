@@ -11,7 +11,6 @@ import { motion, AnimatePresence } from "framer-motion"
 // Category groupings
 const FOOD_CATEGORIES = ["african-foodstuff", "grains", "pantry"]
 const MEAT_FISH_CATEGORIES = ["meat", "fish"]
-const SOAP_PERSONALCARE_CATEGORIES = ["soap", "personal-care"]
 const WIGS_CATEGORIES = ["wigs", "accessories"]
 
 const containerVariants = {
@@ -70,6 +69,15 @@ export default function ProductsPage() {
   const meatFishProducts = products.filter(p => MEAT_FISH_CATEGORIES.includes(p.category || ""))
   const soapProducts = products.filter(p => SOAP_PERSONALCARE_CATEGORIES.includes(p.category || ""))
   const wigsProducts = products.filter(p => WIGS_CATEGORIES.includes(p.category || ""))
+
+  // Debug: Log all unique categories
+  useEffect(() => {
+    if (products.length > 0) {
+      const allCategories = [...new Set(products.map(p => p.category).filter(Boolean))]
+      console.log('All categories in database:', allCategories)
+      console.log('Soap products found:', soapProducts.length)
+    }
+  }, [products, soapProducts.length])
 
   const foodCategories = [...new Set(foodProducts.map(p => p.category).filter(Boolean))] as string[]
   const meatFishCategories = [...new Set(meatFishProducts.map(p => p.category).filter(Boolean))] as string[]
