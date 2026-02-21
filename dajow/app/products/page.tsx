@@ -11,7 +11,6 @@ import { motion, AnimatePresence } from "framer-motion"
 // Category groupings
 const FOOD_CATEGORIES = ["african-foodstuff", "grains", "pantry"]
 const MEAT_FISH_CATEGORIES = ["meat", "fish"]
-const SOAP_PERSONALCARE_CATEGORIES = ["soap", "personal-care"]
 const WIGS_CATEGORIES = ["wigs", "accessories"]
 
 const containerVariants = {
