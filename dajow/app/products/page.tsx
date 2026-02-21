@@ -557,7 +557,7 @@ function ProductGrid({ products, viewMode }: { products: Product[]; viewMode: "g
       }`}
     >
       {products.map((product, index) => (
-        <motion.div key={product.id} variants={itemVariants}>
+       <motion.div key={`product-${index}`} variants={itemVariants}>
           <Link
             href={`/products/${product.id}`}
             className="group block"
