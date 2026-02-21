@@ -15,21 +15,15 @@ const containerVariants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.05
+      staggerChildren: 0.05,
+      delayChildren: 0.1
     }
   }
 }
 
 const itemVariants = {
   hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: {
-      duration: 0.4,
-      ease: [0.25, 0.1, 0.25, 1]
-    }
-  }
+  visible: { y: 0, opacity: 1 }
 }
 
 export default function ProductsPage() {
@@ -557,7 +551,11 @@ function ProductGrid({ products, viewMode }: { products: Product[]; viewMode: "g
       }`}
     >
       {products.map((product, index) => (
-        <motion.div key={`product-${index}`} variants={itemVariants}>
+        <motion.div 
+          key={`product-${index}`} 
+          variants={itemVariants}
+          transition={{ duration: 0.4 }}
+        >
           <Link
             href={`/products/${product.id}`}
             className="group block"
