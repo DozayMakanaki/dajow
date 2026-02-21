@@ -27,7 +27,7 @@ const itemVariants = {
     opacity: 1,
     transition: {
       duration: 0.4,
-      ease: "easeOut"
+      ease: [0.25, 0.1, 0.25, 1]
     }
   }
 }
@@ -557,7 +557,7 @@ function ProductGrid({ products, viewMode }: { products: Product[]; viewMode: "g
       }`}
     >
       {products.map((product, index) => (
-       <motion.div key={`product-${index}`} variants={itemVariants}>
+        <motion.div key={`product-${index}`} variants={itemVariants}>
           <Link
             href={`/products/${product.id}`}
             className="group block"
