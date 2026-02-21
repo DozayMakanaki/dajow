@@ -12,6 +12,8 @@ import { motion, AnimatePresence } from "framer-motion"
 const FOOD_CATEGORIES = ["african-foodstuff", "grains", "pantry"]
 const MEAT_FISH_CATEGORIES = ["meat", "fish"]
 const WIGS_CATEGORIES = ["wigs", "accessories"]
+const SOAP_PERSONALCARE_CATEGORIES = ["soap", "personal-care"]
+
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -39,12 +41,10 @@ export default function ProductsPage() {
   // Active filters for each section
   const [foodFilter, setFoodFilter] = useState<string | null>(null)
   const [meatFishFilter, setMeatFishFilter] = useState<string | null>(null)
-  const [soapFilter, setSoapFilter] = useState<string | null>(null)
   const [wigsFilter, setWigsFilter] = useState<string | null>(null)
 
   const [foodSheetOpen, setFoodSheetOpen] = useState(false)
   const [meatFishSheetOpen, setMeatFishSheetOpen] = useState(false)
-  const [soapSheetOpen, setSoapSheetOpen] = useState(false)
   const [wigsSheetOpen, setWigsSheetOpen] = useState(false)
 
   useEffect(() => {
@@ -67,21 +67,10 @@ export default function ProductsPage() {
   // Group products by section
   const foodProducts = products.filter(p => FOOD_CATEGORIES.includes(p.category || ""))
   const meatFishProducts = products.filter(p => MEAT_FISH_CATEGORIES.includes(p.category || ""))
-  const soapProducts = products.filter(p => SOAP_PERSONALCARE_CATEGORIES.includes(p.category || ""))
   const wigsProducts = products.filter(p => WIGS_CATEGORIES.includes(p.category || ""))
-
-  // Debug: Log all unique categories
-  useEffect(() => {
-    if (products.length > 0) {
-      const allCategories = [...new Set(products.map(p => p.category).filter(Boolean))]
-      console.log('All categories in database:', allCategories)
-      console.log('Soap products found:', soapProducts.length)
-    }
-  }, [products, soapProducts.length])
 
   const foodCategories = [...new Set(foodProducts.map(p => p.category).filter(Boolean))] as string[]
   const meatFishCategories = [...new Set(meatFishProducts.map(p => p.category).filter(Boolean))] as string[]
-  const soapCategories = [...new Set(soapProducts.map(p => p.category).filter(Boolean))] as string[]
   const wigsCategories = [...new Set(wigsProducts.map(p => p.category).filter(Boolean))] as string[]
 
   function applyFiltersAndSort(list: Product[], filter: string | null) {
@@ -102,7 +91,6 @@ export default function ProductsPage() {
 
   const filteredFood = applyFiltersAndSort(foodProducts, foodFilter)
   const filteredMeatFish = applyFiltersAndSort(meatFishProducts, meatFishFilter)
-  const filteredSoap = applyFiltersAndSort(soapProducts, soapFilter)
   const filteredWigs = applyFiltersAndSort(wigsProducts, wigsFilter)
 
   return (
@@ -116,7 +104,7 @@ export default function ProductsPage() {
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-gray-900">All Products</h1>
               <p className="text-xs text-gray-500">
-                {products.length} items · {foodProducts.length} food · {meatFishProducts.length} meat/fish · {soapProducts.length} soap/care · {wigsProducts.length} beauty
+                {products.length} items · {foodProducts.length} food · {meatFishProducts.length} meat/fish · {wigsProducts.length} beauty
               </p>
             </div>
 
@@ -204,29 +192,6 @@ export default function ProductsPage() {
               setActiveFilter={setMeatFishFilter}
               sheetOpen={meatFishSheetOpen}
               setSheetOpen={setMeatFishSheetOpen}
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              viewMode={viewMode}
-            />
-
-            <SectionDivider />
-          </>
-        )}
-
-        {/* ═══════════════════════════════════════════════════════════════ */}
-        {/* SOAP & PERSONAL CARE SECTION */}
-        {/* ═══════════════════════════════════════════════════════════════ */}
-        {soapProducts.length > 0 && (
-          <>
-            <ProductSection
-              title="Soap & Personal Care"
-              subtitle="Bath, body & skincare products"
-              products={filteredSoap}
-              categories={soapCategories}
-              activeFilter={soapFilter}
-              setActiveFilter={setSoapFilter}
-              sheetOpen={soapSheetOpen}
-              setSheetOpen={setSoapSheetOpen}
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
               viewMode={viewMode}
