@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import Link from "next/link"
 import { getProducts, type Product } from "@/lib/products"
 import { Filter, X, Grid3x3, LayoutGrid, ChevronRight, Search, ArrowLeft } from "lucide-react"
@@ -68,12 +68,12 @@ export default function ProductsPage() {
     )
   }
 
-  // Group products by section
-  const foodProducts = products.filter(p => FOOD_SECTIONS.includes(p.section || ""))
-  const grainsProducts = products.filter(p => GRAINS_SECTIONS.includes(p.section || ""))
-  const meatFishProducts = products.filter(p => MEAT_FISH_SECTIONS.includes(p.section || ""))
-  const soapProducts = products.filter(p => SOAP_PERSONALCARE_SECTIONS.includes(p.section || ""))
-  const wigsProducts = products.filter(p => WIGS_SECTIONS.includes(p.section || ""))
+  // Group products by section (memoized to prevent re-creation)
+  const foodProducts = useMemo(() => products.filter(p => FOOD_SECTIONS.includes(p.section || "")), [products])
+  const grainsProducts = useMemo(() => products.filter(p => GRAINS_SECTIONS.includes(p.section || "")), [products])
+  const meatFishProducts = useMemo(() => products.filter(p => MEAT_FISH_SECTIONS.includes(p.section || "")), [products])
+  const soapProducts = useMemo(() => products.filter(p => SOAP_PERSONALCARE_SECTIONS.includes(p.section || "")), [products])
+  const wigsProducts = useMemo(() => products.filter(p => WIGS_SECTIONS.includes(p.section || "")), [products])
 
   // Debug: Log all unique sections and categories
   useEffect(() => {
@@ -85,7 +85,7 @@ export default function ProductsPage() {
       console.log('Grains products found:', grainsProducts.length)
       console.log('Soap products found:', soapProducts.length)
     }
-  }, [products])
+  }, [products, grainsProducts, soapProducts])
 
   const foodCategories = [...new Set(foodProducts.map(p => p.category).filter(Boolean))] as string[]
   const grainsCategories = [...new Set(grainsProducts.map(p => p.category).filter(Boolean))] as string[]
