@@ -13,7 +13,7 @@ const FOOD_SECTIONS = ["pantry", "fresh", "snacks"]
 const GRAINS_SECTIONS = ["grains"]
 const MEAT_FISH_SECTIONS = ["meat", "dairy"]
 const SOAP_PERSONALCARE_SECTIONS = ["soap"]
-const WIGS_SECTIONS = ["popular", "wigs"]
+const WIGS_SECTIONS = ["synthetic", "wigs", "extensions", "accessories"]
 
 const containerVariants = {
   hidden: { opacity: 0 },
