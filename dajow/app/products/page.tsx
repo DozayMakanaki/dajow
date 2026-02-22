@@ -9,9 +9,9 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { motion, AnimatePresence } from "framer-motion"
 
 // Section groupings (by product.section field)
-const FOOD_SECTIONS = ["pantry", "fresh", "snacks"]
+const FOOD_SECTIONS = ["pantry", "fresh", "snacks", "beverages", "frozen", "dairy", "bakery"]
 const GRAINS_SECTIONS = ["grains"]
-const MEAT_FISH_SECTIONS = ["meat", "dairy"]
+const MEAT_FISH_SECTIONS = ["meat", "fish"]
 const SOAP_PERSONALCARE_SECTIONS = ["soap"]
 const WIGS_SECTIONS = ["synthetic", "wigs", "extensions", "accessories"]
 
