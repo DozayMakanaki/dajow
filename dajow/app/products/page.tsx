@@ -85,7 +85,7 @@ export default function ProductsPage() {
       console.log('Grains products found:', grainsProducts.length)
       console.log('Soap products found:', soapProducts.length)
     }
-  }, [products, grainsProducts.length, soapProducts.length])
+  }, [products])
 
   const foodCategories = [...new Set(foodProducts.map(p => p.category).filter(Boolean))] as string[]
   const grainsCategories = [...new Set(grainsProducts.map(p => p.category).filter(Boolean))] as string[]
