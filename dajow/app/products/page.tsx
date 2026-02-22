@@ -113,9 +113,7 @@ export default function ProductsPage() {
             
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-gray-900">All Products</h1>
-              <p className="text-xs text-gray-500">
-                {products.length} items · {foodProducts.length} food · {grainsProducts.length} grains · {meatFishProducts.length} meat/fish · {soapProducts.length} soap/care · {wigsProducts.length} beauty
-              </p>
+              
             </div>
 
             <div className="flex items-center gap-2">
