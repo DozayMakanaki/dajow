@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { addProduct } from "@/lib/firestore-products"
+import { useEffect, useState } from "react"
+import { useRouter, useParams } from "next/navigation"
+import { getProductById } from "@/lib/products"
+import { updateProduct } from "@/lib/firestore-products"
 import Image from "next/image"
 import { Save, ArrowLeft, Loader2, Link as LinkIcon, X, Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -24,8 +25,13 @@ function generateSlug(name: string): string {
     .replace(/^-+|-+$/g, "")
 }
 
-export default function NewProductPage() {
+export default function EditProductPage() {
   const router = useRouter()
+  const params = useParams()
+  const id = params.id as string
+
+  const [product, setProduct] = useState<any | null>(null)
+  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
   // Image URL state
@@ -37,6 +43,36 @@ export default function NewProductPage() {
   const [hasVariants, setHasVariants] = useState(false)
   const [variants, setVariants] = useState<ProductVariant[]>([])
   const [variantType, setVariantType] = useState<"size" | "color">("size")
+
+  useEffect(() => {
+    if (!id) return
+    getProductById(id)
+      .then((data) => {
+        if (!data) {
+          router.replace("/admin/products")
+          return
+        }
+        setProduct(data)
+        setImageUrl(data.image || "")
+        setImageUrlInput(data.image || "")
+        
+        // Load variants if they exist
+        if (data.hasVariants && data.variants && Array.isArray(data.variants)) {
+          setHasVariants(true)
+          setVariants(data.variants)
+          
+          // Detect variant type
+          if (data.variants.length > 0) {
+            if (data.variants[0].color) {
+              setVariantType("color")
+            } else {
+              setVariantType("size")
+            }
+          }
+        }
+      })
+      .finally(() => setLoading(false))
+  }, [id, router])
 
   function handleUrlInput(val: string) {
     setImageUrlInput(val)
@@ -78,25 +114,22 @@ export default function NewProductPage() {
   function toggleHasVariants(enabled: boolean) {
     setHasVariants(enabled)
     if (enabled && variants.length === 0) {
+      // Add first variant by default
       addVariant()
     }
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    const form = e.currentTarget
-    const data = new FormData(form)
-    const name = data.get("name") as string
-
-    if (!imageUrl && !hasVariants) {
-      alert("Please provide an image URL")
-      return
-    }
-
+    if (!product) return
     setSaving(true)
 
     try {
-      const productData: any = {
+      const form = e.currentTarget
+      const data = new FormData(form)
+      const name = data.get("name") as string
+
+      const updateData: any = {
         name,
         slug: generateSlug(name),
         price: Number(data.get("price")),
@@ -110,22 +143,50 @@ export default function NewProductPage() {
 
       // Add variants if enabled
       if (hasVariants && variants.length > 0) {
-        productData.variants = variants.filter(v => {
+        updateData.variants = variants.filter(v => {
+          // Only include variants that have required fields
           const hasRequiredField = variantType === "size" ? v.size : v.color
           return hasRequiredField && v.price > 0
         })
+      } else {
+        updateData.variants = []
       }
 
-      await addProduct(productData)
+      await updateProduct(id, updateData)
 
-      alert("✅ Product added successfully")
+      alert("✅ Product updated successfully")
       router.push("/admin/products")
     } catch (error) {
-      console.error("Error adding product:", error)
-      alert("Failed to add product. Please try again.")
+      console.error("Error updating product:", error)
+      alert("Failed to update product. Please try again.")
     } finally {
       setSaving(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-orange-600" />
+          <p className="text-gray-600">Loading product...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-xl text-red-500 mb-4">Product not found</p>
+          <Button onClick={() => router.push("/admin/products")} variant="outline">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Products
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -142,8 +203,8 @@ export default function NewProductPage() {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Products
           </Button>
-          <h1 className="text-3xl font-bold text-gray-900">Add New Product</h1>
-          <p className="text-gray-600 mt-2">Fill in the details to list a new product</p>
+          <h1 className="text-3xl font-bold text-gray-900">Edit Product</h1>
+          <p className="text-gray-600 mt-2">Update product information</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -159,6 +220,7 @@ export default function NewProductPage() {
               <Input
                 id="name"
                 name="name"
+                defaultValue={product.name}
                 placeholder="e.g., Fresh Tomatoes"
                 className="h-12"
                 required
@@ -176,6 +238,7 @@ export default function NewProductPage() {
                   name="price"
                   type="number"
                   step="0.01"
+                  defaultValue={product.price}
                   placeholder="e.g., 9.99"
                   className="h-12"
                   required={!hasVariants}
@@ -193,6 +256,7 @@ export default function NewProductPage() {
                 <Input
                   id="category"
                   name="category"
+                  defaultValue={product.category}
                   placeholder="e.g., Vegetables"
                   className="h-12"
                   required
@@ -208,18 +272,20 @@ export default function NewProductPage() {
               <select
                 id="section"
                 name="section"
-                defaultValue=""
+                defaultValue={product.section}
                 className="w-full h-12 px-4 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 required
               >
-                <option value="" disabled>Select section</option>
+                <option value="">Select section</option>
                 <option value="popular">Popular</option>
                 <option value="fresh">Fresh Produce</option>
+                <option value="grains">Rice & Grains</option>
                 <option value="dairy">Dairy</option>
                 <option value="meat">Meat & Poultry</option>
                 <option value="pantry">Pantry</option>
                 <option value="snacks">Snacks</option>
                 <option value="wigs">Wigs</option>
+                <option value="soap">Soap & Personal Care</option>
               </select>
             </div>
 
@@ -231,6 +297,7 @@ export default function NewProductPage() {
               <Textarea
                 id="description"
                 name="description"
+                defaultValue={product.description}
                 placeholder="Product description..."
                 className="h-32 resize-none"
                 required
@@ -243,7 +310,7 @@ export default function NewProductPage() {
                 type="checkbox"
                 id="inStock"
                 name="inStock"
-                defaultChecked
+                defaultChecked={product.inStock}
                 className="w-5 h-5 text-orange-600 rounded focus:ring-orange-500"
               />
               <Label htmlFor="inStock" className="text-sm font-medium cursor-pointer">
@@ -255,9 +322,7 @@ export default function NewProductPage() {
           {/* Image Card */}
           <div className="bg-white rounded-xl shadow-sm border p-6 space-y-5">
             <div>
-              <Label className="text-sm font-semibold">
-                Product Image {!hasVariants && "*"}
-              </Label>
+              <Label className="text-sm font-semibold">Product Image</Label>
               <p className="text-sm text-gray-500 mt-1">
                 {hasVariants 
                   ? "This is the default/fallback image. You can set specific images for each variant below."
@@ -500,12 +565,12 @@ export default function NewProductPage() {
               {saving ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Adding...
+                  Saving...
                 </>
               ) : (
                 <>
                   <Save className="mr-2 h-4 w-4" />
-                  Add Product
+                  Save Changes
                 </>
               )}
             </Button>
