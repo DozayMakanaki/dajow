@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from "framer-motion"
 const FOOD_SECTIONS = ["pantry", "fresh", "snacks", "beverages", "frozen", "dairy", "bakery", "african-foods"]
 const GRAINS_SECTIONS = ["grains"]
 const MEAT_FISH_SECTIONS = ["meat", "fish"]
-const SOAP_PERSONALCARE_SECTIONS = ["soap"]
+const SOAP_PERSONALCARE_SECTIONS = ["soap", "skincare", "haircare", "personal-care", "hair-creams", "oils", "lotions"]
 const WIGS_SECTIONS = ["synthetic", "wigs", "extensions", "accessories"]
 
 const containerVariants = {
