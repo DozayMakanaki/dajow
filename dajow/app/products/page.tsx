@@ -10,9 +10,9 @@ import { motion, AnimatePresence } from "framer-motion"
 
 // Section groupings (by product.section field)
 const FOOD_SECTIONS = ["pantry", "fresh", ]
-const GROCERIES_SECTIONS = ["groceries", "household", "beverages", "popular", "snacks"]
+const GROCERIES_SECTIONS = ["groceries", "household", "beverages", "popular", "snacks", "dairy"]
 const GRAINS_SECTIONS = ["grains"]
-const MEAT_FISH_SECTIONS = ["meat", "dairy"]
+const MEAT_FISH_SECTIONS = ["meat",]
 const SOAP_PERSONALCARE_SECTIONS = ["soap"]
 const WIGS_SECTIONS = [ "wigs", "synthetic-hair", "hair-extensions", "beauty" ]
 
