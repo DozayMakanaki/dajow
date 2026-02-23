@@ -9,7 +9,7 @@ export default function AdminProductsPage() {
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
-  const [categoryFilter, setCategoryFilter] = useState<string>("all")
+  const [sectionFilter, setSectionFilter] = useState<string>("all")
   const [stockFilter, setStockFilter] = useState<"all" | "in-stock" | "out-of-stock">("all")
   const [sortBy, setSortBy] = useState<"name" | "price-low" | "price-high" | "newest">("newest")
 
@@ -26,10 +26,10 @@ export default function AdminProductsPage() {
     setProducts(prev => prev.filter(p => p.id !== id))
   }
 
-  // Get unique categories
-  const categories = useMemo(() => {
-    const cats = [...new Set(products.map(p => p.category).filter(Boolean))] as string[]
-    return cats.sort()
+  // Get unique sections
+  const sections = useMemo(() => {
+    const secs = [...new Set(products.map(p => p.section).filter(Boolean))] as string[]
+    return secs.sort()
   }, [products])
 
   // Filter + search + sort
@@ -47,9 +47,9 @@ export default function AdminProductsPage() {
       )
     }
 
-    // Category filter
-    if (categoryFilter !== "all") {
-      list = list.filter(p => p.category === categoryFilter)
+    // Section filter
+    if (sectionFilter !== "all") {
+      list = list.filter(p => p.section === sectionFilter)
     }
 
     // Stock filter
@@ -78,13 +78,13 @@ export default function AdminProductsPage() {
     }
 
     return list
-  }, [products, search, categoryFilter, stockFilter, sortBy])
+  }, [products, search, sectionFilter, stockFilter, sortBy])
 
-  const hasActiveFilters = search || categoryFilter !== "all" || stockFilter !== "all"
+  const hasActiveFilters = search || sectionFilter !== "all" || stockFilter !== "all"
 
   function clearAll() {
     setSearch("")
-    setCategoryFilter("all")
+    setSectionFilter("all")
     setStockFilter("all")
     setSortBy("newest")
   }
@@ -165,23 +165,23 @@ export default function AdminProductsPage() {
         <div className="flex flex-wrap gap-2 items-center">
           <SlidersHorizontal className="h-4 w-4 text-gray-400 flex-shrink-0" />
 
-          {/* Category */}
+          {/* Section */}
           <div className="relative">
             <select
-              value={categoryFilter}
-              onChange={e => setCategoryFilter(e.target.value)}
+              value={sectionFilter}
+              onChange={e => setSectionFilter(e.target.value)}
               className={`pl-3 pr-8 py-1.5 rounded-full text-xs font-medium border appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                categoryFilter !== "all"
+                sectionFilter !== "all"
                   ? "bg-orange-600 text-white border-orange-600"
                   : "bg-gray-50 text-gray-700 border-gray-200 hover:border-gray-300"
               }`}
             >
-              <option value="all">All Categories</option>
-              {categories.map(cat => (
-                <option key={cat} value={cat}>{cat.replace(/-/g, " ")}</option>
+              <option value="all">All Sections</option>
+              {sections.map(sec => (
+                <option key={sec} value={sec}>{sec.replace(/-/g, " ")}</option>
               ))}
             </select>
-            <ChevronDown className={`absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 pointer-events-none ${categoryFilter !== "all" ? "text-white" : "text-gray-400"}`} />
+            <ChevronDown className={`absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 pointer-events-none ${sectionFilter !== "all" ? "text-white" : "text-gray-400"}`} />
           </div>
 
           {/* Stock */}
