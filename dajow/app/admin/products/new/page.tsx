@@ -1,9 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useRouter, useParams } from "next/navigation"
-import { getProductById } from "@/lib/products"
-import { updateProduct } from "@/lib/firestore-products"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { addProduct } from "@/lib/firestore-products"
 import Image from "next/image"
 import { Save, ArrowLeft, Loader2, Link as LinkIcon, X, Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -25,13 +24,8 @@ function generateSlug(name: string): string {
     .replace(/^-+|-+$/g, "")
 }
 
-export default function EditProductPage() {
+export default function NewProductPage() {
   const router = useRouter()
-  const params = useParams()
-  const id = params.id as string
-
-  const [product, setProduct] = useState<any | null>(null)
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
   // Image URL state
@@ -43,36 +37,6 @@ export default function EditProductPage() {
   const [hasVariants, setHasVariants] = useState(false)
   const [variants, setVariants] = useState<ProductVariant[]>([])
   const [variantType, setVariantType] = useState<"size" | "color">("size")
-
-  useEffect(() => {
-    if (!id) return
-    getProductById(id)
-      .then((data) => {
-        if (!data) {
-          router.replace("/admin/products")
-          return
-        }
-        setProduct(data)
-        setImageUrl(data.image || "")
-        setImageUrlInput(data.image || "")
-        
-        // Load variants if they exist
-        if (data.hasVariants && data.variants && Array.isArray(data.variants)) {
-          setHasVariants(true)
-          setVariants(data.variants)
-          
-          // Detect variant type
-          if (data.variants.length > 0) {
-            if (data.variants[0].color) {
-              setVariantType("color")
-            } else {
-              setVariantType("size")
-            }
-          }
-        }
-      })
-      .finally(() => setLoading(false))
-  }, [id, router])
 
   function handleUrlInput(val: string) {
     setImageUrlInput(val)
@@ -114,22 +78,25 @@ export default function EditProductPage() {
   function toggleHasVariants(enabled: boolean) {
     setHasVariants(enabled)
     if (enabled && variants.length === 0) {
-      // Add first variant by default
       addVariant()
     }
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (!product) return
+    const form = e.currentTarget
+    const data = new FormData(form)
+    const name = data.get("name") as string
+
+    if (!imageUrl && !hasVariants) {
+      alert("Please provide an image URL")
+      return
+    }
+
     setSaving(true)
 
     try {
-      const form = e.currentTarget
-      const data = new FormData(form)
-      const name = data.get("name") as string
-
-      const updateData: any = {
+      const productData: any = {
         name,
         slug: generateSlug(name),
         price: Number(data.get("price")),
@@ -143,50 +110,22 @@ export default function EditProductPage() {
 
       // Add variants if enabled
       if (hasVariants && variants.length > 0) {
-        updateData.variants = variants.filter(v => {
-          // Only include variants that have required fields
+        productData.variants = variants.filter(v => {
           const hasRequiredField = variantType === "size" ? v.size : v.color
           return hasRequiredField && v.price > 0
         })
-      } else {
-        updateData.variants = []
       }
 
-      await updateProduct(id, updateData)
+      await addProduct(productData)
 
-      alert("✅ Product updated successfully")
+      alert("✅ Product added successfully")
       router.push("/admin/products")
     } catch (error) {
-      console.error("Error updating product:", error)
-      alert("Failed to update product. Please try again.")
+      console.error("Error adding product:", error)
+      alert("Failed to add product. Please try again.")
     } finally {
       setSaving(false)
     }
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-orange-600" />
-          <p className="text-gray-600">Loading product...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!product) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-xl text-red-500 mb-4">Product not found</p>
-          <Button onClick={() => router.push("/admin/products")} variant="outline">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Products
-          </Button>
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -203,8 +142,8 @@ export default function EditProductPage() {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Products
           </Button>
-          <h1 className="text-3xl font-bold text-gray-900">Edit Product</h1>
-          <p className="text-gray-600 mt-2">Update product information</p>
+          <h1 className="text-3xl font-bold text-gray-900">Add New Product</h1>
+          <p className="text-gray-600 mt-2">Fill in the details to list a new product</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -220,7 +159,6 @@ export default function EditProductPage() {
               <Input
                 id="name"
                 name="name"
-                defaultValue={product.name}
                 placeholder="e.g., Fresh Tomatoes"
                 className="h-12"
                 required
@@ -238,7 +176,6 @@ export default function EditProductPage() {
                   name="price"
                   type="number"
                   step="0.01"
-                  defaultValue={product.price}
                   placeholder="e.g., 9.99"
                   className="h-12"
                   required={!hasVariants}
@@ -256,7 +193,6 @@ export default function EditProductPage() {
                 <Input
                   id="category"
                   name="category"
-                  defaultValue={product.category}
                   placeholder="e.g., Vegetables"
                   className="h-12"
                   required
@@ -272,13 +208,14 @@ export default function EditProductPage() {
               <select
                 id="section"
                 name="section"
-                defaultValue={product.section}
+                defaultValue=""
                 className="w-full h-12 px-4 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 required
               >
-                <option value="">Select section</option>
+                <option value="" disabled>Select section</option>
                 <option value="popular">Popular</option>
                 <option value="fresh">Fresh Produce</option>
+                <option value="groceries">Groceries</option>
                 <option value="grains">Rice & Grains</option>
                 <option value="dairy">Dairy</option>
                 <option value="meat">Meat & Poultry</option>
@@ -297,7 +234,6 @@ export default function EditProductPage() {
               <Textarea
                 id="description"
                 name="description"
-                defaultValue={product.description}
                 placeholder="Product description..."
                 className="h-32 resize-none"
                 required
@@ -310,7 +246,7 @@ export default function EditProductPage() {
                 type="checkbox"
                 id="inStock"
                 name="inStock"
-                defaultChecked={product.inStock}
+                defaultChecked
                 className="w-5 h-5 text-orange-600 rounded focus:ring-orange-500"
               />
               <Label htmlFor="inStock" className="text-sm font-medium cursor-pointer">
@@ -322,7 +258,9 @@ export default function EditProductPage() {
           {/* Image Card */}
           <div className="bg-white rounded-xl shadow-sm border p-6 space-y-5">
             <div>
-              <Label className="text-sm font-semibold">Product Image</Label>
+              <Label className="text-sm font-semibold">
+                Product Image {!hasVariants && "*"}
+              </Label>
               <p className="text-sm text-gray-500 mt-1">
                 {hasVariants 
                   ? "This is the default/fallback image. You can set specific images for each variant below."
@@ -565,12 +503,12 @@ export default function EditProductPage() {
               {saving ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
+                  Adding...
                 </>
               ) : (
                 <>
                   <Save className="mr-2 h-4 w-4" />
-                  Save Changes
+                  Add Product
                 </>
               )}
             </Button>

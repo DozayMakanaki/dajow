@@ -279,6 +279,7 @@ export default function EditProductPage() {
                 <option value="">Select section</option>
                 <option value="popular">Popular</option>
                 <option value="fresh">Fresh Produce</option>
+                <option value="groceries">Groceries</option>
                 <option value="grains">Rice & Grains</option>
                 <option value="dairy">Dairy</option>
                 <option value="meat">Meat & Poultry</option>

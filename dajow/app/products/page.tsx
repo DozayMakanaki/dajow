@@ -9,11 +9,12 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { motion, AnimatePresence } from "framer-motion"
 
 // Section groupings (by product.section field)
-const FOOD_SECTIONS = ["pantry", "fresh", "snacks", "beverages", "frozen", "dairy", "bakery", "african-foods"]
+const FOOD_SECTIONS = ["pantry", "fresh", "snacks"]
+const GROCERIES_SECTIONS = ["groceries"]
 const GRAINS_SECTIONS = ["grains"]
-const MEAT_FISH_SECTIONS = ["meat", "fish"]
-const SOAP_PERSONALCARE_SECTIONS = ["soap", "skincare", "haircare", "personal-care", "hair-creams", "oils", "lotions"]
-const WIGS_SECTIONS = ["synthetic", "wigs", "extensions", "accessories"]
+const MEAT_FISH_SECTIONS = ["meat", "dairy"]
+const SOAP_PERSONALCARE_SECTIONS = ["soap"]
+const WIGS_SECTIONS = ["popular", "wigs"]
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -40,12 +41,14 @@ export default function ProductsPage() {
 
   // Active filters for each section
   const [foodFilter, setFoodFilter] = useState<string | null>(null)
+  const [groceriesFilter, setGroceriesFilter] = useState<string | null>(null)
   const [grainsFilter, setGrainsFilter] = useState<string | null>(null)
   const [meatFishFilter, setMeatFishFilter] = useState<string | null>(null)
   const [soapFilter, setSoapFilter] = useState<string | null>(null)
   const [wigsFilter, setWigsFilter] = useState<string | null>(null)
 
   const [foodSheetOpen, setFoodSheetOpen] = useState(false)
+  const [groceriesSheetOpen, setGroceriesSheetOpen] = useState(false)
   const [grainsSheetOpen, setGrainsSheetOpen] = useState(false)
   const [meatFishSheetOpen, setMeatFishSheetOpen] = useState(false)
   const [soapSheetOpen, setSoapSheetOpen] = useState(false)
@@ -70,12 +73,14 @@ export default function ProductsPage() {
 
   // Group products by section
   const foodProducts = products.filter(p => FOOD_SECTIONS.includes(p.section || ""))
+  const groceriesProducts = products.filter(p => GROCERIES_SECTIONS.includes(p.section || ""))
   const grainsProducts = products.filter(p => GRAINS_SECTIONS.includes(p.section || ""))
   const meatFishProducts = products.filter(p => MEAT_FISH_SECTIONS.includes(p.section || ""))
   const soapProducts = products.filter(p => SOAP_PERSONALCARE_SECTIONS.includes(p.section || ""))
   const wigsProducts = products.filter(p => WIGS_SECTIONS.includes(p.section || ""))
 
   const foodCategories = [...new Set(foodProducts.map(p => p.category).filter(Boolean))] as string[]
+  const groceriesCategories = [...new Set(groceriesProducts.map(p => p.category).filter(Boolean))] as string[]
   const grainsCategories = [...new Set(grainsProducts.map(p => p.category).filter(Boolean))] as string[]
   const meatFishCategories = [...new Set(meatFishProducts.map(p => p.category).filter(Boolean))] as string[]
   const soapCategories = [...new Set(soapProducts.map(p => p.category).filter(Boolean))] as string[]
@@ -98,6 +103,7 @@ export default function ProductsPage() {
   }
 
   const filteredFood = applyFiltersAndSort(foodProducts, foodFilter)
+  const filteredGroceries = applyFiltersAndSort(groceriesProducts, groceriesFilter)
   const filteredGrains = applyFiltersAndSort(grainsProducts, grainsFilter)
   const filteredMeatFish = applyFiltersAndSort(meatFishProducts, meatFishFilter)
   const filteredSoap = applyFiltersAndSort(soapProducts, soapFilter)
@@ -113,7 +119,9 @@ export default function ProductsPage() {
             
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-gray-900">All Products</h1>
-              
+              <p className="text-xs text-gray-500">
+                {products.length} items · {foodProducts.length} food · {grainsProducts.length} grains · {meatFishProducts.length} meat/fish · {soapProducts.length} soap/care · {wigsProducts.length} beauty
+              </p>
             </div>
 
             <div className="flex items-center gap-2">
@@ -177,6 +185,29 @@ export default function ProductsPage() {
               setActiveFilter={setFoodFilter}
               sheetOpen={foodSheetOpen}
               setSheetOpen={setFoodSheetOpen}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              viewMode={viewMode}
+            />
+
+            <SectionDivider />
+          </>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/* GROCERIES SECTION */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {groceriesProducts.length > 0 && (
+          <>
+            <ProductSection
+              title="Groceries"
+              subtitle="Everyday essentials & household items"
+              products={filteredGroceries}
+              categories={groceriesCategories}
+              activeFilter={groceriesFilter}
+              setActiveFilter={setGroceriesFilter}
+              sheetOpen={groceriesSheetOpen}
+              setSheetOpen={setGroceriesSheetOpen}
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
               viewMode={viewMode}
