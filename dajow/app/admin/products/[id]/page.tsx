@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
-import { getProductById, updateProduct } from "@/lib/firestore-products"
+import { updateProduct } from "@/lib/firestore-products"
 import Image from "next/image"
 import { Save, ArrowLeft, Loader2, Link as LinkIcon, X, Plus, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -121,17 +121,20 @@ export default function EditProductPage() {
 
   useEffect(() => {
     if (!id) return
-    getProductById(id)
-      .then((data) => {
-        if (!data) {
-          router.replace("/admin/products")
-          return
-        }
-        setProduct(data)
-        setImageUrl(data.image || "")
-        setImageUrlInput(data.image || "")
-      })
-      .finally(() => setLoading(false))
+    
+    // Fetch all products and find the one we need
+    import('@/lib/firestore-products').then(({ getProducts }) => {
+      return getProducts()
+    }).then((products) => {
+      const foundProduct = products.find((p: any) => p.id === id)
+      if (!foundProduct) {
+        router.replace("/admin/products")
+        return
+      }
+      setProduct(foundProduct)
+      setImageUrl(foundProduct.image || "")
+      setImageUrlInput(foundProduct.image || "")
+    }).finally(() => setLoading(false))
   }, [id, router])
 
   // Apply the typed URL as the live preview
