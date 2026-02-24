@@ -51,7 +51,7 @@ export default function EditProductPage() {
     import('@/lib/firestore-products').then(({ getProducts }) => {
       return getProducts()
     }).then((products) => {
-      const foundProduct = products.find((p: any) => p.id === id)
+      const foundProduct = products.find((p: any) => p.id === id) as any
       if (!foundProduct) {
         router.replace("/admin/products")
         return
@@ -131,6 +131,46 @@ export default function EditProductPage() {
       alert('⚠️ Failed to convert image. Please try again.')
     } finally {
       setUploading(false)
+      // Clear the file input
+      e.target.value = ''
+    }
+  }
+
+  // Variant image upload to data URL
+  async function handleVariantImageUpload(e: React.ChangeEvent<HTMLInputElement>, variantIndex: number) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
+    if (!validTypes.includes(file.type)) {
+      alert('Please upload a valid image file (JPG, PNG, WEBP, or GIF)')
+      return
+    }
+
+    // Validate file size
+    if (file.size > 5 * 1024 * 1024) {
+      alert('⚠️ Image is larger than 5MB. For best performance, use smaller images.')
+    }
+
+    try {
+      // Convert file to base64 data URL
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          resolve(reader.result as string)
+        }
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
+
+      // Update the variant image
+      updateVariant(variantIndex, "image", dataUrl)
+      alert('✅ Variant image converted successfully!')
+    } catch (error) {
+      console.error('Image conversion error:', error)
+      alert('⚠️ Failed to convert image.')
+    } finally {
       // Clear the file input
       e.target.value = ''
     }
@@ -593,13 +633,28 @@ export default function EditProductPage() {
                         <Label className="text-xs font-semibold mb-2">
                           Variant Image (Optional)
                         </Label>
+                        
+                        {/* Upload Button for Variant */}
+                        <label className="block mb-2">
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                            onChange={(e) => handleVariantImageUpload(e, index)}
+                            className="hidden"
+                          />
+                          <div className="flex items-center justify-center gap-2 h-9 px-3 rounded-lg border border-dashed border-orange-300 bg-orange-50 hover:bg-orange-100 transition cursor-pointer">
+                            <Upload className="h-3 w-3 text-orange-600" />
+                            <span className="text-xs font-medium text-orange-600">Convert Image</span>
+                          </div>
+                        </label>
+
                         <div className="flex gap-2">
                           <div className="relative flex-1">
                             <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400" />
                             <Input
                               value={variant.image || ""}
                               onChange={(e) => updateVariant(index, "image", e.target.value)}
-                              placeholder="https://example.com/variant-image.jpg"
+                              placeholder="Or paste URL..."
                               className="h-10 pl-9 text-sm"
                             />
                           </div>
