@@ -10,50 +10,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 
-/**
- * Upload image file to ImgBB and return the direct URL
- */
-async function uploadImageToImgBB(file: File): Promise<string> {
-  try {
-    // Convert file to base64
-    const base64 = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        const result = reader.result as string
-        // Remove data:image/...;base64, prefix
-        const base64String = result.split(',')[1]
-        resolve(base64String)
-      }
-      reader.onerror = reject
-      reader.readAsDataURL(file)
-    })
-
-    // Upload to ImgBB
-    const formData = new FormData()
-    formData.append('image', base64)
-    
-    const response = await fetch('https://api.imgbb.com/1/upload?key=d2d52f93860dbaf1000fa2aa1c4c0583', {
-      method: 'POST',
-      body: formData,
-    })
-    
-    if (!response.ok) {
-      throw new Error(`Upload failed: ${response.status}`)
-    }
-
-    const data = await response.json()
-    
-    if (data.success && data.data?.url) {
-      return data.data.url
-    } else {
-      throw new Error(data.error?.message || 'Upload failed')
-    }
-  } catch (error) {
-    console.error('ImgBB upload error:', error)
-    throw error
-  }
-}
-
 function generateSlug(name: string): string {
   return name
     .toLowerCase()
@@ -157,23 +113,35 @@ export default function EditProductPage() {
       return
     }
 
-    // Max 32MB for ImgBB
-    if (file.size > 32 * 1024 * 1024) {
-      alert('Image must be less than 32MB')
-      return
+    // Validate file size (max 5MB for data URLs work best)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('⚠️ Image is larger than 5MB. For best performance, use smaller images or compress them first.')
+      // Still allow it, but warn the user
     }
 
     setUploading(true)
     setImageError(false)
 
     try {
-      const url = await uploadImageToImgBB(file)
-      setImageUrl(url)
-      setImageUrlInput(url)
-      alert(`✅ Image uploaded successfully!`)
+      // Convert file to base64 data URL
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          resolve(reader.result as string)
+        }
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
+
+      // Set the data URL as the image
+      setImageUrl(dataUrl)
+      setImageUrlInput(dataUrl.substring(0, 50) + '...' + dataUrl.substring(dataUrl.length - 20))
+      setImageError(false)
+      
+      alert('✅ Image converted successfully! The image is now embedded as a data URL.')
     } catch (error) {
-      console.error('Upload error:', error)
-      alert('❌ Upload failed. Please try again or paste a direct URL instead.')
+      console.error('Image conversion error:', error)
+      alert('❌ Failed to convert image. Please try again or paste a direct URL instead.')
       setImageError(true)
     } finally {
       setUploading(false)
@@ -367,7 +335,7 @@ export default function EditProductPage() {
             <div>
               <Label className="text-sm font-semibold">Product Image</Label>
               <p className="text-sm text-gray-500 mt-1">
-                Upload an image file or paste a direct URL
+                Upload an image file (converts to data URL) or paste a direct image URL
               </p>
             </div>
 
@@ -393,17 +361,27 @@ export default function EditProductPage() {
                   {uploading ? (
                     <>
                       <Loader2 className="h-4 w-4 text-orange-600 animate-spin" />
-                      <span className="text-sm font-medium text-orange-600">Uploading...</span>
+                      <span className="text-sm font-medium text-orange-600">Converting...</span>
                     </>
                   ) : (
                     <>
                       <Upload className="h-4 w-4 text-orange-600" />
-                      <span className="text-sm font-medium text-orange-600">Upload Image File</span>
+                      <span className="text-sm font-medium text-orange-600">Convert Image File to URL</span>
                     </>
                   )}
                 </div>
               </label>
             </div>
+
+            {/* Info about data URLs */}
+            {imageUrl && imageUrl.startsWith('data:image') && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                <p className="text-xs font-semibold text-green-800 mb-1">✅ Image Embedded as Data URL</p>
+                <p className="text-xs text-green-700">
+                  Your image is now stored directly in the URL - no external hosting needed!
+                </p>
+              </div>
+            )}
 
             {/* OR Divider */}
             <div className="relative">
@@ -473,12 +451,12 @@ export default function EditProductPage() {
 
             {/* Tips */}
             <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
-              <p className="text-xs font-semibold text-blue-800 mb-2">💡 Image Upload Tips:</p>
+              <p className="text-xs font-semibold text-blue-800 mb-2">💡 Image Conversion Tips:</p>
               <ul className="text-xs text-blue-700 space-y-1">
-                <li>• Upload files up to 32MB (JPG, PNG, WEBP, GIF)</li>
-                <li>• Images are hosted permanently on ImgBB</li>
+                <li>• Upload files (JPG, PNG, WEBP, GIF) - instantly converts to data URL</li>
+                <li>• Images under 500KB work best for optimal performance</li>
                 <li>• Or paste URLs from Google Images, Unsplash, etc.</li>
-                <li>• Right-click any image online → "Copy image address"</li>
+                <li>• Data URLs embed the image directly - no hosting needed!</li>
               </ul>
             </div>
           </div>

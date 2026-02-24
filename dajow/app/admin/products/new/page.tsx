@@ -51,7 +51,7 @@ export default function NewProductPage() {
     setImageError(false)
   }
 
-  // File upload to ImgBB
+  // File upload to data URL (no external service needed)
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -63,55 +63,34 @@ export default function NewProductPage() {
       return
     }
 
-    // Validate file size (max 32MB for ImgBB)
-    if (file.size > 32 * 1024 * 1024) {
-      alert('Image must be less than 32MB')
-      return
+    // Validate file size (max 5MB for data URLs work best)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('⚠️ Image is larger than 5MB. For best performance, use smaller images or compress them first.')
+      // Still allow it, but warn the user
     }
 
     setUploading(true)
 
     try {
-      // Convert file to base64
-      const base64 = await new Promise<string>((resolve, reject) => {
+      // Convert file to base64 data URL
+      const dataUrl = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader()
         reader.onloadend = () => {
-          const result = reader.result as string
-          // Remove data:image/...;base64, prefix
-          const base64String = result.split(',')[1]
-          resolve(base64String)
+          resolve(reader.result as string)
         }
         reader.onerror = reject
         reader.readAsDataURL(file)
       })
 
-      // Upload to ImgBB (free, no account needed)
-      const formData = new FormData()
-      formData.append('image', base64)
+      // Set the data URL as the image
+      setImageUrl(dataUrl)
+      setImageUrlInput(dataUrl.substring(0, 50) + '...' + dataUrl.substring(dataUrl.length - 20))
+      setImageError(false)
       
-      const response = await fetch('https://api.imgbb.com/1/upload?key=d2d52f93860dbaf1000fa2aa1c4c0583', {
-        method: 'POST',
-        body: formData
-      })
-
-      if (!response.ok) {
-        throw new Error(`Upload failed: ${response.status}`)
-      }
-
-      const data = await response.json()
-
-      if (data.success && data.data.url) {
-        const imageUrl = data.data.url
-        setImageUrl(imageUrl)
-        setImageUrlInput(imageUrl)
-        setImageError(false)
-        alert('✅ Image uploaded successfully!')
-      } else {
-        throw new Error('Upload failed - no URL returned')
-      }
+      alert('✅ Image converted successfully! The image is now embedded as a data URL.')
     } catch (error) {
-      console.error('Image upload error:', error)
-      alert('⚠️ Upload failed. Please try again or paste a direct image URL instead.')
+      console.error('Image conversion error:', error)
+      alert('⚠️ Failed to convert image. Please try again.')
     } finally {
       setUploading(false)
       // Clear the file input
@@ -333,7 +312,7 @@ export default function NewProductPage() {
               <p className="text-sm text-gray-500 mt-1">
                 {hasVariants 
                   ? "This is the default/fallback image. You can set specific images for each variant below."
-                  : "Upload an image file or paste a direct image URL"}
+                  : "Upload an image file (converts to data URL) or paste a direct image URL"}
               </p>
             </div>
 
@@ -355,17 +334,27 @@ export default function NewProductPage() {
                   {uploading ? (
                     <>
                       <Loader2 className="h-4 w-4 text-orange-600 animate-spin" />
-                      <span className="text-sm font-medium text-orange-600">Uploading...</span>
+                      <span className="text-sm font-medium text-orange-600">Converting...</span>
                     </>
                   ) : (
                     <>
                       <Upload className="h-4 w-4 text-orange-600" />
-                      <span className="text-sm font-medium text-orange-600">Upload Image File</span>
+                      <span className="text-sm font-medium text-orange-600">Convert Image File to URL</span>
                     </>
                   )}
                 </div>
               </label>
             </div>
+
+            {/* Info about data URLs */}
+            {imageUrl && imageUrl.startsWith('data:image') && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                <p className="text-xs font-semibold text-green-800 mb-1">✅ Image Embedded as Data URL</p>
+                <p className="text-xs text-green-700">
+                  Your image is now stored directly in the URL - no external hosting needed!
+                </p>
+              </div>
+            )}
 
             {/* Divider */}
             <div className="relative">
