@@ -51,7 +51,7 @@ export default function NewProductPage() {
     setImageError(false)
   }
 
-  // File upload to Imgur
+  // File upload to ImgBB
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -63,42 +63,59 @@ export default function NewProductPage() {
       return
     }
 
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      alert('Image must be less than 10MB')
+    // Validate file size (max 32MB for ImgBB)
+    if (file.size > 32 * 1024 * 1024) {
+      alert('Image must be less than 32MB')
       return
     }
 
     setUploading(true)
 
     try {
-      const formData = new FormData()
-      formData.append('image', file)
+      // Convert file to base64
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          const result = reader.result as string
+          // Remove data:image/...;base64, prefix
+          const base64String = result.split(',')[1]
+          resolve(base64String)
+        }
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
 
-      const response = await fetch('https://api.imgur.com/3/image', {
+      // Upload to ImgBB (free, no account needed)
+      const formData = new FormData()
+      formData.append('image', base64)
+      
+      const response = await fetch('https://api.imgbb.com/1/upload?key=d2d52f93860dbaf1000fa2aa1c4c0583', {
         method: 'POST',
-        headers: {
-          Authorization: 'Client-ID a42c0e432c57e57' // Anonymous Imgur client ID
-        },
         body: formData
       })
 
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.status}`)
+      }
+
       const data = await response.json()
 
-      if (data.success && data.data.link) {
-        const imgurUrl = data.data.link
-        setImageUrl(imgurUrl)
-        setImageUrlInput(imgurUrl)
+      if (data.success && data.data.url) {
+        const imageUrl = data.data.url
+        setImageUrl(imageUrl)
+        setImageUrlInput(imageUrl)
         setImageError(false)
         alert('✅ Image uploaded successfully!')
       } else {
-        throw new Error('Upload failed')
+        throw new Error('Upload failed - no URL returned')
       }
     } catch (error) {
       console.error('Image upload error:', error)
-      alert('Failed to upload image. Please try again or paste a direct URL instead.')
+      alert('⚠️ Upload failed. Please try again or paste a direct image URL instead.')
     } finally {
       setUploading(false)
+      // Clear the file input
+      e.target.value = ''
     }
   }
 
