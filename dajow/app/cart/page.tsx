@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { useCartStore } from "@/store/cart-store"
 import {
   Minus, Plus, Trash2, ShoppingBag, ArrowRight, MapPin,
-  Phone, User, Mail, CreditCard, MessageCircle, ShieldCheck, RotateCcw, Lock,
+  Phone, User, Mail, CreditCard, MessageCircle, ShieldCheck, Lock, Truck, AlertCircle,
 } from "lucide-react"
 import { useState } from "react"
 import { useAuth } from "@/providers/auth-provider"
@@ -17,6 +17,7 @@ import { createOrder } from "@/lib/create-order"
 
 type PaymentMethod = "stripe" | "whatsapp"
 type CheckoutStep = "cart" | "details" | "payment"
+type DeliveryLocation = "bangor" | "northern-ireland" | "outside-ni"
 
 interface ShippingDetails {
   fullName: string
@@ -26,6 +27,15 @@ interface ShippingDetails {
   city: string
   state: string
   postalCode: string
+  deliveryLocation: DeliveryLocation
+}
+
+// Shipping cost by location only
+function getShippingCost(location: DeliveryLocation): number | "contact" {
+  if (location === "bangor") return 5
+  if (location === "northern-ireland") return 10
+  if (location === "outside-ni") return "contact"
+  return 0
 }
 
 export default function CartPage() {
@@ -44,10 +54,14 @@ export default function CartPage() {
     city: "",
     state: "",
     postalCode: "",
+    deliveryLocation: "bangor",
   })
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  const total = subtotal
+  const shippingCost = getShippingCost(shippingDetails.deliveryLocation)
+  const needsContactForShipping = shippingCost === "contact"
+  const shippingAmount = typeof shippingCost === "number" ? shippingCost : 0
+  const total = subtotal + shippingAmount
 
   const handleUpdateField = (field: keyof ShippingDetails, value: string) => {
     setShippingDetails((prev) => ({ ...prev, [field]: value }))
@@ -60,7 +74,8 @@ export default function CartPage() {
       shippingDetails.phone.trim() &&
       shippingDetails.address.trim() &&
       shippingDetails.city.trim() &&
-      shippingDetails.state.trim()
+      shippingDetails.state.trim() &&
+      shippingDetails.deliveryLocation
     )
 
   const handleProceedToDetails = () => {
@@ -73,6 +88,12 @@ export default function CartPage() {
       alert("Please fill in all required fields")
       return
     }
+    
+    if (needsContactForShipping) {
+      alert("⚠️ For deliveries outside Northern Ireland, please contact customer support via WhatsApp for a shipping quote based on weight.")
+      return
+    }
+    
     setStep("payment")
   }
 
@@ -86,13 +107,17 @@ export default function CartPage() {
       alert("Please fill in all shipping details")
       return
     }
+    
+    if (needsContactForShipping) {
+      alert("⚠️ Please contact customer support for shipping quote")
+      return
+    }
 
     setLoading(true)
 
     try {
       const shippingAddressString = `${shippingDetails.address}, ${shippingDetails.city}, ${shippingDetails.state} ${shippingDetails.postalCode}`
 
-      // Create the order in Firestore first (status: "pending")
       const orderId = await createOrder({
         userId: user.uid,
         email: shippingDetails.email,
@@ -112,9 +137,7 @@ export default function CartPage() {
         },
       })
 
-      // ─────────────────────────────────────
-      // 💳 STRIPE PAYMENT
-      // ─────────────────────────────────────
+      // STRIPE PAYMENT
       if (paymentMethod === "stripe") {
         const res = await fetch("/api/checkout", {
           method: "POST",
@@ -141,17 +164,21 @@ export default function CartPage() {
         return
       }
 
-      // ─────────────────────────────────────
-      // 💬 WHATSAPP ORDER (Cash on Delivery)
-      // ─────────────────────────────────────
+      // WHATSAPP ORDER
       if (paymentMethod === "whatsapp") {
+        const locationLabel = 
+          shippingDetails.deliveryLocation === "bangor" ? "Bangor" :
+          shippingDetails.deliveryLocation === "northern-ireland" ? "Northern Ireland (Outside Bangor)" :
+          "Outside Northern Ireland"
+        
         const message = encodeURIComponent(
           `🛒 *New Order - #${orderId.slice(0, 8).toUpperCase()}*\n\n` +
             `👤 *Customer Details:*\n` +
             `Name: ${shippingDetails.fullName}\n` +
             `Phone: ${shippingDetails.phone}\n` +
             `Email: ${shippingDetails.email}\n\n` +
-            `📦 *Shipping Address:*\n${shippingAddressString}\n\n` +
+            `📦 *Shipping Address:*\n${shippingAddressString}\n` +
+            `📍 *Delivery Location:* ${locationLabel}\n\n` +
             `🛍️ *Order Items:*\n` +
             items
               .map(
@@ -159,7 +186,9 @@ export default function CartPage() {
                   `• ${item.name}\n  Qty: ${item.quantity} × £${item.price.toLocaleString()} = £${(item.price * item.quantity).toLocaleString()}`
               )
               .join("\n\n") +
-            `\n\n💰 *Total: £${total.toLocaleString()}*\n\n` +
+            `\n\n💰 *Subtotal: £${subtotal.toLocaleString()}*\n` +
+            `🚚 *Shipping: £${shippingAmount.toLocaleString()}*\n` +
+            `💳 *Total: £${total.toLocaleString()}*\n\n` +
             `Payment: Cash on Delivery`
         )
 
@@ -179,9 +208,7 @@ export default function CartPage() {
     }
   }
 
-  // ─────────────────────────────────────────────────
   // EMPTY CART STATE
-  // ─────────────────────────────────────────────────
   if (items.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-b from-orange-50/30 to-white">
@@ -312,6 +339,87 @@ export default function CartPage() {
                 <h2 className="text-xl md:text-3xl font-bold mb-4 md:mb-6">Shipping Details</h2>
 
                 <div className="space-y-4">
+                  {/* Delivery Location Selector */}
+                  <div className="p-4 bg-orange-50 border-2 border-orange-200 rounded-xl">
+                    <label className="block text-sm font-semibold text-gray-900 mb-3">
+                      <Truck className="inline h-4 w-4 mr-1 text-orange-600" />
+                      Delivery Location *
+                    </label>
+                    <div className="space-y-2">
+                      <label className={`flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                        shippingDetails.deliveryLocation === "bangor" ? "border-orange-600 bg-white" : "border-gray-200 hover:bg-white"
+                      }`}>
+                        <input
+                          type="radio"
+                          checked={shippingDetails.deliveryLocation === "bangor"}
+                          onChange={() => handleUpdateField("deliveryLocation", "bangor")}
+                          className="w-4 h-4 accent-orange-600"
+                        />
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">Bangor</p>
+                          <p className="text-xs text-gray-600">Flat rate - £5.00</p>
+                        </div>
+                      </label>
+
+                      <label className={`flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                        shippingDetails.deliveryLocation === "northern-ireland" ? "border-orange-600 bg-white" : "border-gray-200 hover:bg-white"
+                      }`}>
+                        <input
+                          type="radio"
+                          checked={shippingDetails.deliveryLocation === "northern-ireland"}
+                          onChange={() => handleUpdateField("deliveryLocation", "northern-ireland")}
+                          className="w-4 h-4 accent-orange-600"
+                        />
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">Northern Ireland (Outside Bangor)</p>
+                          <p className="text-xs text-gray-600">Flat rate - £10.00</p>
+                        </div>
+                      </label>
+
+                      <label className={`flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                        shippingDetails.deliveryLocation === "outside-ni" ? "border-orange-600 bg-white" : "border-gray-200 hover:bg-white"
+                      }`}>
+                        <input
+                          type="radio"
+                          checked={shippingDetails.deliveryLocation === "outside-ni"}
+                          onChange={() => handleUpdateField("deliveryLocation", "outside-ni")}
+                          className="w-4 h-4 accent-orange-600"
+                        />
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">Outside Northern Ireland</p>
+                          <p className="text-xs text-gray-600">Weight-based pricing (contact for quote)</p>
+                          <p className="text-xs text-gray-500 mt-1">0-2kg: £5 | 2-10kg: £8.50 | 10-20kg: £14 | 20kg+: Contact us</p>
+                        </div>
+                      </label>
+                    </div>
+
+                    {/* Shipping Cost Display */}
+                    {shippingDetails.deliveryLocation && (
+                      <div className="mt-3 p-3 bg-white rounded-lg border flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Shipping Cost:</span>
+                        <span className="font-bold text-orange-600">
+                          {needsContactForShipping ? (
+                            <span className="text-xs flex items-center gap-1">
+                              <AlertCircle className="h-3 w-3" />
+                              Contact Support
+                            </span>
+                          ) : (
+                            `£${shippingAmount.toFixed(2)}`
+                          )}
+                        </span>
+                      </div>
+                    )}
+
+                    {needsContactForShipping && (
+                      <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-2">
+                        <AlertCircle className="h-4 w-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+                        <p className="text-xs text-yellow-800">
+                          <span className="font-semibold">Special Delivery:</span> For deliveries outside Northern Ireland, shipping cost is based on package weight. Please contact customer support via WhatsApp for an accurate quote.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
@@ -348,7 +456,7 @@ export default function CartPage() {
                     <Input
                       value={shippingDetails.phone}
                       onChange={(e) => handleUpdateField("phone", e.target.value)}
-                      placeholder="+234 XXX XXX XXXX"
+                      placeholder="+44 XXX XXX XXXX"
                       className="h-10 md:h-12 text-sm md:text-base"
                     />
                   </div>
@@ -372,16 +480,16 @@ export default function CartPage() {
                       <Input
                         value={shippingDetails.city}
                         onChange={(e) => handleUpdateField("city", e.target.value)}
-                        placeholder="Lagos"
+                        placeholder="Bangor"
                         className="h-10 md:h-12 text-sm md:text-base"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">State *</label>
+                      <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">State/County *</label>
                       <Input
                         value={shippingDetails.state}
                         onChange={(e) => handleUpdateField("state", e.target.value)}
-                        placeholder="Lagos State"
+                        placeholder="County Down"
                         className="h-10 md:h-12 text-sm md:text-base"
                       />
                     </div>
@@ -392,7 +500,7 @@ export default function CartPage() {
                       <Input
                         value={shippingDetails.postalCode}
                         onChange={(e) => handleUpdateField("postalCode", e.target.value)}
-                        placeholder="100001"
+                        placeholder="BT19"
                         className="h-10 md:h-12 text-sm md:text-base"
                       />
                     </div>
@@ -412,7 +520,7 @@ export default function CartPage() {
                     onClick={handleProceedToPayment}
                     size="lg"
                     className="w-full sm:flex-1 bg-orange-600 hover:bg-orange-700 h-12 md:h-14 text-sm md:text-base"
-                    disabled={!isDetailsValid()}
+                    disabled={!isDetailsValid() || needsContactForShipping}
                   >
                     <span className="hidden sm:inline">Continue to Payment</span>
                     <span className="sm:hidden">Continue</span>
@@ -498,7 +606,7 @@ export default function CartPage() {
                           Send order via WhatsApp and pay on delivery
                         </p>
                         <span className="inline-block text-[10px] md:text-xs font-semibold bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                          Cash
+                          Cash on Delivery
                         </span>
                       </div>
                     </label>
@@ -574,8 +682,8 @@ export default function CartPage() {
                     <span className="sm:hidden">Protected</span>
                   </span>
                   <span className="flex items-center gap-1 md:gap-1.5">
-                    <RotateCcw className="h-3 w-3 md:h-4 md:w-4 text-gray-400" />
-                    
+                    <Truck className="h-3 w-3 md:h-4 md:w-4 text-gray-400" />
+                    Fast Delivery
                   </span>
                 </div>
               </motion.div>
@@ -611,10 +719,27 @@ export default function CartPage() {
               </div>
 
               <div className="border-t pt-3 md:pt-4 space-y-2 md:space-y-3 text-xs md:text-sm">
-                <div className="flex justify-between text-base md:text-lg">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Subtotal</span>
+                  <span className="font-semibold">£{subtotal.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 flex items-center gap-1">
+                    <Truck className="h-3 w-3" />
+                    Shipping
+                  </span>
+                  <span className="font-semibold">
+                    {needsContactForShipping ? (
+                      <span className="text-xs text-orange-600">Contact Us</span>
+                    ) : (
+                      `£${shippingAmount.toLocaleString()}`
+                    )}
+                  </span>
+                </div>
+                <div className="flex justify-between text-base md:text-lg pt-2 border-t">
                   <span className="font-bold">Total</span>
                   <span className="font-bold text-orange-600">
-                    £{Math.round(total).toLocaleString()}
+                    {needsContactForShipping ? "TBC" : `£${Math.round(total).toLocaleString()}`}
                   </span>
                 </div>
               </div>
@@ -624,7 +749,6 @@ export default function CartPage() {
                   <ShieldCheck className="h-3 w-3 md:h-3.5 md:w-3.5 text-gray-400" />
                   Secure checkout guaranteed
                 </p>
-                
               </div>
             </div>
           </div>
