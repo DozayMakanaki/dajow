@@ -170,6 +170,7 @@ export default function CartPage() {
             items,
             orderId,
             customerEmail: shippingDetails.email,
+            shippingCost: shippingAmount,
           }),
         })
 
