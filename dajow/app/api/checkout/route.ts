@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
- 
+  
 })
 
 export async function POST(req: NextRequest) {
@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
       req.headers.get("referer")?.split("/").slice(0, 3).join("/") ||
       "http://localhost:3000"
 
-    const { items, orderId, customerEmail } = await req.json()
+    const { items, orderId, customerEmail, shippingCost } = await req.json()
 
     if (!items || items.length === 0) {
       return NextResponse.json({ error: "No items in cart" }, { status: 400 })
@@ -32,25 +32,10 @@ export async function POST(req: NextRequest) {
       })
     )
 
-    const subtotal = items.reduce(
-      (sum: number, item: { price: number; quantity: number }) =>
-        sum + item.price * item.quantity,
-      0
-    )
-    const tax = Math.round(subtotal * 0.075 * 100) / 100
-    const shipping = subtotal > 50 ? 0 : 2.99
+    // Use shipping cost passed from cart (location-based)
+    const shipping = shippingCost || 0
 
-    if (tax > 0) {
-      lineItems.push({
-        price_data: {
-          currency: "gbp",
-          product_data: { name: "VAT (7.5%)" },
-          unit_amount: Math.round(tax * 100),
-        },
-        quantity: 1,
-      })
-    }
-
+    // Add shipping line item
     if (shipping > 0) {
       lineItems.push({
         price_data: {
