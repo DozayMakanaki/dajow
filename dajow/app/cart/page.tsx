@@ -89,8 +89,32 @@ export default function CartPage() {
       return
     }
     
+    // For Outside NI - Open WhatsApp directly
     if (needsContactForShipping) {
-      alert("⚠️ For deliveries outside Northern Ireland, please contact customer support via WhatsApp for a shipping quote based on weight.")
+      const shippingAddressString = `${shippingDetails.address}, ${shippingDetails.city}, ${shippingDetails.state} ${shippingDetails.postalCode}`
+      
+      const message = encodeURIComponent(
+        `🛒 *ORDER INQUIRY - Delivery Quote Needed*\n\n` +
+          `👤 *Customer Details:*\n` +
+          `Name: ${shippingDetails.fullName}\n` +
+          `Phone: ${shippingDetails.phone}\n` +
+          `Email: ${shippingDetails.email}\n\n` +
+          `📦 *Shipping Address:*\n${shippingAddressString}\n` +
+          `📍 *Delivery Location:* Outside Northern Ireland\n\n` +
+          `🛍️ *Order Items:*\n` +
+          items
+            .map(
+              (item) =>
+                `• ${item.name}\n  Qty: ${item.quantity} × £${item.price.toLocaleString()} = £${(item.price * item.quantity).toLocaleString()}`
+            )
+            .join("\n\n") +
+          `\n\n💰 *Subtotal: £${subtotal.toLocaleString()}*\n\n` +
+          `⚖️ *REQUEST:* Please provide shipping quote based on package weight\n` +
+          `(Rates: 0-2kg=£5, 2-10kg=£8.50, 10-20kg=£14, 20kg+=Custom)`
+      )
+
+      const phone = "+447704335223"
+      window.open(`https://wa.me/${phone}?text=${message}`, "_blank")
       return
     }
     
@@ -411,10 +435,10 @@ export default function CartPage() {
                     )}
 
                     {needsContactForShipping && (
-                      <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-2">
-                        <AlertCircle className="h-4 w-4 text-yellow-600 flex-shrink-0 mt-0.5" />
-                        <p className="text-xs text-yellow-800">
-                          <span className="font-semibold">Special Delivery:</span> For deliveries outside Northern Ireland, shipping cost is based on package weight. Please contact customer support via WhatsApp for an accurate quote.
+                      <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2">
+                        <MessageCircle className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                        <p className="text-xs text-green-800">
+                          <span className="font-semibold">💬 WhatsApp Quote:</span> Click "Continue" below to contact us on WhatsApp with your order details. We'll provide a shipping quote based on your package weight.
                         </p>
                       </div>
                     )}
@@ -519,12 +543,26 @@ export default function CartPage() {
                   <Button
                     onClick={handleProceedToPayment}
                     size="lg"
-                    className="w-full sm:flex-1 bg-orange-600 hover:bg-orange-700 h-12 md:h-14 text-sm md:text-base"
-                    disabled={!isDetailsValid() || needsContactForShipping}
+                    className={`w-full sm:flex-1 h-12 md:h-14 text-sm md:text-base ${
+                      needsContactForShipping 
+                        ? "bg-green-600 hover:bg-green-700" 
+                        : "bg-orange-600 hover:bg-orange-700"
+                    }`}
+                    disabled={!isDetailsValid()}
                   >
-                    <span className="hidden sm:inline">Continue to Payment</span>
-                    <span className="sm:hidden">Continue</span>
-                    <ArrowRight className="ml-2 h-4 w-4 md:h-5 md:w-5" />
+                    {needsContactForShipping ? (
+                      <>
+                        <MessageCircle className="mr-2 h-4 w-4 md:h-5 md:w-5" />
+                        <span className="hidden sm:inline">Contact Support via WhatsApp</span>
+                        <span className="sm:hidden">Contact Support</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="hidden sm:inline">Continue to Payment</span>
+                        <span className="sm:hidden">Continue</span>
+                        <ArrowRight className="ml-2 h-4 w-4 md:h-5 md:w-5" />
+                      </>
+                    )}
                   </Button>
                 </div>
               </motion.div>
