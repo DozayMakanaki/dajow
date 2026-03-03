@@ -13,7 +13,7 @@ interface Product {
   name: string
   price: number
   image: string
-  category: string
+  section: string
 }
 
 interface CategoryProducts {
@@ -38,10 +38,14 @@ export default function CategorySections() {
       const result: CategoryProducts = {}
 
       try {
-        for (const category of categoryTree) {
+        // Only show these specific sections
+        const allowedSections = ["fresh", "groceries", "grains", "meat", "wigs", "soap"]
+        const filteredCategories = categoryTree.filter(cat => allowedSections.includes(cat.slug))
+
+        for (const category of filteredCategories) {
           const q = query(
             collection(db, "products"),
-            where("category", "==", category.slug),
+            where("section", "==", category.slug),
             limit(4)
           )
           const snapshot = await getDocs(q)
@@ -60,6 +64,10 @@ export default function CategorySections() {
 
     fetchProducts()
   }, [])
+
+  // Filter categories to only show allowed sections
+  const allowedSections = ["fresh", "groceries", "grains", "meat", "wigs", "soap"]
+  const displayCategories = categoryTree.filter(cat => allowedSections.includes(cat.slug))
 
   return (
     <section ref={containerRef} className="relative mx-auto max-w-7xl px-4 py-16 md:py-24 overflow-hidden">
@@ -107,7 +115,7 @@ export default function CategorySections() {
 
       {/* Categories */}
       <div className="space-y-24">
-        {categoryTree.map((category, categoryIndex) => {
+        {displayCategories.map((category, categoryIndex) => {
           const products = categoryProducts[category.slug] || []
 
           return (
@@ -131,19 +139,13 @@ export default function CategorySections() {
                   <div>
                     <div className="flex items-center gap-3 mb-1">
                       <h2 className="text-3xl md:text-5xl font-black text-gray-900">{category.name}</h2>
-                      {categoryIndex === 0 && (
-                        <span className="hidden md:inline-flex items-center gap-1 bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold">
-                          <TrendingUp className="h-3 w-3" />
-                          Popular
-                        </span>
-                      )}
                     </div>
                     <p className="text-gray-500 text-base md:text-lg">{category.description}</p>
                   </div>
                 </div>
 
                 <Link
-                  href={`/products?category=${category.slug}`}
+                  href={`/products?section=${category.slug}`}
                   className="hidden md:flex items-center gap-2 bg-gradient-to-r from-orange-600 to-orange-500 text-white px-6 py-3 rounded-xl font-bold hover:shadow-lg hover:scale-105 transition-all group"
                 >
                   View All
@@ -200,13 +202,13 @@ export default function CategorySections() {
                 </div>
               ) : (
                 <div className="text-center py-12 bg-gray-50 rounded-2xl">
-                  <p className="text-gray-400">No products in this category yet</p>
+                  <p className="text-gray-400">No products in this section yet</p>
                 </div>
               )}
 
               {/* Mobile View All */}
               <Link
-                href={`/products?category=${category.slug}`}
+                href={`/products?section=${category.slug}`}
                 className="md:hidden flex items-center justify-center gap-2 bg-gradient-to-r from-orange-600 to-orange-500 text-white font-bold py-4 rounded-2xl hover:shadow-lg transition-all mt-8"
               >
                 View All {category.name}
@@ -214,7 +216,7 @@ export default function CategorySections() {
               </Link>
 
               {/* Divider */}
-              {categoryIndex < categoryTree.length - 1 && (
+              {categoryIndex < displayCategories.length - 1 && (
                 <motion.div
                   initial={{ scaleX: 0 }}
                   whileInView={{ scaleX: 1 }}
