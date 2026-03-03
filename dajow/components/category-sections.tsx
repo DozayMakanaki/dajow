@@ -2,8 +2,7 @@
 
 import Link from "next/link"
 import { motion, useScroll, useTransform } from "framer-motion"
-import { categoryTree } from "@/lib/category-tree"
-import { ArrowRight, Sparkles, TrendingUp, Zap, Star } from "lucide-react"
+import { ArrowRight, Sparkles, Zap, Star, ShoppingBag, Wheat, Drumstick, Shirt, Droplet } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { collection, query, where, getDocs, limit } from "firebase/firestore"
 import { db } from "@/lib/firebase"
@@ -19,6 +18,46 @@ interface Product {
 interface CategoryProducts {
   [key: string]: Product[]
 }
+
+// Hardcoded sections - no categoryTree needed
+const SECTIONS = [
+  {
+    slug: "fresh",
+    name: "Fresh Produce",
+    description: "Fresh fruits and vegetables",
+    icon: "🥬"
+  },
+  {
+    slug: "groceries",
+    name: "Groceries",
+    description: "Essential grocery items",
+    icon: "🛒"
+  },
+  {
+    slug: "grains",
+    name: "Rice & Grains",
+    description: "Quality rice and grains",
+    icon: "🌾"
+  },
+  {
+    slug: "meat",
+    name: "Meat & Poultry",
+    description: "Fresh meat and poultry",
+    icon: "🥩"
+  },
+  {
+    slug: "wigs",
+    name: "Wigs",
+    description: "Premium wigs and hair products",
+    icon: "💇"
+  },
+  {
+    slug: "soap",
+    name: "Soap & Personal Care",
+    description: "Soaps and personal care items",
+    icon: "🧼"
+  }
+]
 
 export default function CategorySections() {
   const [categoryProducts, setCategoryProducts] = useState<CategoryProducts>({})
@@ -38,18 +77,15 @@ export default function CategorySections() {
       const result: CategoryProducts = {}
 
       try {
-        // Only show these specific sections
-        const allowedSections = ["fresh", "groceries", "grains", "meat", "wigs", "soap"]
-        const filteredCategories = categoryTree.filter(cat => allowedSections.includes(cat.slug))
-
-        for (const category of filteredCategories) {
+        // Query each section directly
+        for (const section of SECTIONS) {
           const q = query(
             collection(db, "products"),
-            where("section", "==", category.slug),
+            where("section", "==", section.slug),
             limit(4)
           )
           const snapshot = await getDocs(q)
-          result[category.slug] = snapshot.docs.map(doc => ({
+          result[section.slug] = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
           } as Product))
@@ -64,10 +100,6 @@ export default function CategorySections() {
 
     fetchProducts()
   }, [])
-
-  // Filter categories to only show allowed sections
-  const allowedSections = ["fresh", "groceries", "grains", "meat", "wigs", "soap"]
-  const displayCategories = categoryTree.filter(cat => allowedSections.includes(cat.slug))
 
   return (
     <section ref={containerRef} className="relative mx-auto max-w-7xl px-4 py-16 md:py-24 overflow-hidden">
@@ -115,37 +147,37 @@ export default function CategorySections() {
 
       {/* Categories */}
       <div className="space-y-24">
-        {displayCategories.map((category, categoryIndex) => {
-          const products = categoryProducts[category.slug] || []
+        {SECTIONS.map((section, sectionIndex) => {
+          const products = categoryProducts[section.slug] || []
 
           return (
             <motion.div
-              key={category.slug}
+              key={section.slug}
               initial={{ opacity: 0, y: 60 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 0.7, delay: categoryIndex * 0.1 }}
+              transition={{ duration: 0.7, delay: sectionIndex * 0.1 }}
             >
-              {/* Category Header */}
+              {/* Section Header */}
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-10">
                 <div className="flex items-center gap-5">
                   <motion.div whileHover={{ rotate: 360, scale: 1.1 }} transition={{ duration: 0.6 }} className="relative">
                     <div className="absolute inset-0 bg-gradient-to-br from-orange-600 to-orange-500 rounded-3xl blur-xl opacity-50" />
                     <div className="relative w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-orange-600 to-orange-500 rounded-3xl flex items-center justify-center text-4xl md:text-5xl shadow-2xl">
-                      {category.icon}
+                      {section.icon}
                     </div>
                   </motion.div>
 
                   <div>
                     <div className="flex items-center gap-3 mb-1">
-                      <h2 className="text-3xl md:text-5xl font-black text-gray-900">{category.name}</h2>
+                      <h2 className="text-3xl md:text-5xl font-black text-gray-900">{section.name}</h2>
                     </div>
-                    <p className="text-gray-500 text-base md:text-lg">{category.description}</p>
+                    <p className="text-gray-500 text-base md:text-lg">{section.description}</p>
                   </div>
                 </div>
 
                 <Link
-                  href={`/products?section=${category.slug}`}
+                  href={`/products?section=${section.slug}`}
                   className="hidden md:flex items-center gap-2 bg-gradient-to-r from-orange-600 to-orange-500 text-white px-6 py-3 rounded-xl font-bold hover:shadow-lg hover:scale-105 transition-all group"
                 >
                   View All
@@ -208,15 +240,15 @@ export default function CategorySections() {
 
               {/* Mobile View All */}
               <Link
-                href={`/products?section=${category.slug}`}
+                href={`/products?section=${section.slug}`}
                 className="md:hidden flex items-center justify-center gap-2 bg-gradient-to-r from-orange-600 to-orange-500 text-white font-bold py-4 rounded-2xl hover:shadow-lg transition-all mt-8"
               >
-                View All {category.name}
+                View All {section.name}
                 <ArrowRight className="h-5 w-5" />
               </Link>
 
               {/* Divider */}
-              {categoryIndex < displayCategories.length - 1 && (
+              {sectionIndex < SECTIONS.length - 1 && (
                 <motion.div
                   initial={{ scaleX: 0 }}
                   whileInView={{ scaleX: 1 }}
