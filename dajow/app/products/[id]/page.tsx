@@ -200,10 +200,11 @@ export default function ProductDetailPage() {
     ? selectedVariant.price
     : (Number(product?.price) || 0)
 
-  // Get display image - prioritize variant image, then product image
-  const displayImage = product?.hasVariants && selectedVariant?.image
-    ? selectedVariant.image
-    : product?.image || "/placeholder.png"
+  // ✅ FIXED: Proper image fallback - only use variant image if it exists and is not empty
+  const displayImage = 
+    (product?.hasVariants && selectedVariant?.image && selectedVariant.image.trim() !== "")
+      ? selectedVariant.image
+      : product?.image || "/placeholder.png"
 
   const hasColors = parsedVariants.length > 0 && parsedVariants.some(v => v.color)
   const hasSizes = parsedVariants.length > 0 && parsedVariants.some(v => v.size)
@@ -266,7 +267,7 @@ export default function ProductDetailPage() {
       <div className="max-w-7xl mx-auto px-4 py-8 lg:py-12">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-16">
           
-          {/* Product Image - Now changes with variant */}
+          {/* Product Image - Now changes with variant OR shows main image as fallback */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
