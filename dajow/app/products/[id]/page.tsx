@@ -200,11 +200,11 @@ export default function ProductDetailPage() {
     ? selectedVariant.price
     : (Number(product?.price) || 0)
 
-  // ✅ FIXED: Proper image fallback - only use variant image if it exists and is not empty
+  // ✅ FIXED: Use inline SVG instead of placeholder.png
   const displayImage = 
     (product?.hasVariants && selectedVariant?.image && selectedVariant.image.trim() !== "")
       ? selectedVariant.image
-      : product?.image || "/placeholder.png"
+      : product?.image || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect fill='%23f3f4f6' width='400' height='400'/%3E%3C/svg%3E"
 
   const hasColors = parsedVariants.length > 0 && parsedVariants.some(v => v.color)
   const hasSizes = parsedVariants.length > 0 && parsedVariants.some(v => v.size)
