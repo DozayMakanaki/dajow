@@ -20,17 +20,27 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'encrypted-tbn0.gstatic.com', // ✅ Google images
+        hostname: 'encrypted-tbn0.gstatic.com',
         pathname: '/**',
       },
       {
         protocol: 'https',
-        hostname: 'i.imgur.com', // ✅ Imgur
+        hostname: 'i.imgur.com',
         pathname: '/**',
       },
       {
         protocol: 'https',
-        hostname: 'imgur.com', // ✅ Imgur
+        hostname: 'imgur.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'image.made-in-china.com', // ✅ NEW
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 's.alicdn.com', // ✅ NEW
         pathname: '/**',
       },
       {
