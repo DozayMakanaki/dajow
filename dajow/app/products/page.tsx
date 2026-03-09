@@ -418,7 +418,7 @@ function ProductSection({
                       !activeFilter ? "bg-orange-600 text-white shadow-md" : "bg-gray-50 text-gray-700 hover:bg-orange-50"
                     }`}
                   >
-                    All Categories
+                    All  Categories
                   </button>
 
                   {categories.map(cat => (
