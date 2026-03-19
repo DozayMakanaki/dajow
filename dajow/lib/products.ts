@@ -6,6 +6,7 @@ export type Product = {
   name: string
   price: number
   image: string
+  images?: string[]  // ← ADDED: Multiple product images for gallery
   category: string
   section?: string
   searchKeywords?: string[]

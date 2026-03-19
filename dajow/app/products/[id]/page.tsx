@@ -6,7 +6,7 @@ import { getProductById, trackProductView, type Product } from "@/lib/products"
 import Image from "next/image"
 import { useCartStore } from "@/store/cart-store"
 import { Button } from "@/components/ui/button"
-import { Minus, Plus, ShoppingCart, Heart, Star, Package, TruckIcon, ShieldCheck, Check, Share2, ChevronLeft } from "lucide-react"
+import { Minus, Plus, ShoppingCart, Heart, Star, Package, TruckIcon, ShieldCheck, Check, Share2, ChevronLeft, ChevronRight } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useRouter } from "next/navigation"
 
@@ -71,7 +71,6 @@ function getColorHex(colorName: string): string {
   return COLOR_MAP[upper] || COLOR_MAP[colorName.trim()] || '#CCCCCC'
 }
 
-// Updated to include image field
 function parseVariants(variants: any[]): ProductVariant[] {
   if (!variants || !Array.isArray(variants)) return []
   
@@ -124,6 +123,11 @@ export default function ProductDetailPage() {
   const [parsedVariants, setParsedVariants] = useState<ProductVariant[]>([])
   const [showSuccess, setShowSuccess] = useState(false)
   const [isFavorite, setIsFavorite] = useState(false)
+  
+  // Image gallery state
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [imageGallery, setImageGallery] = useState<string[]>([])
+  
   const { addItem } = useCartStore()
 
   useEffect(() => {
@@ -138,6 +142,30 @@ export default function ProductDetailPage() {
         }
         
         setProduct(data)
+        
+        // Build image gallery from product.images array or main image
+        const gallery: string[] = []
+        
+        // Add images from product.images field if it exists
+        if (data.images && Array.isArray(data.images) && data.images.length > 0) {
+          data.images.forEach(img => {
+            if (typeof img === 'string' && img.trim() !== '') {
+              gallery.push(img)
+            }
+          })
+        }
+        
+        // Add main image if not already in gallery
+        if (data.image && typeof data.image === 'string' && data.image.trim() !== '' && !gallery.includes(data.image)) {
+          gallery.unshift(data.image) // Add at beginning
+        }
+        
+        // If no images at all, use placeholder
+        if (gallery.length === 0) {
+          gallery.push("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect fill='%23f3f4f6' width='400' height='400'/%3E%3C/svg%3E")
+        }
+        
+        setImageGallery(gallery)
         
         if (data.hasVariants && data.variants) {
           const parsed = parseVariants(data.variants)
@@ -184,7 +212,7 @@ export default function ProductDetailPage() {
         id: product.id,
         name: itemName,
         price: finalPrice,
-        image: product.image,
+        image: imageGallery[currentImageIndex] || product.image,
         quantity: 1
       })
     }
@@ -200,14 +228,21 @@ export default function ProductDetailPage() {
     ? selectedVariant.price
     : (Number(product?.price) || 0)
 
-  // ✅ FIXED: Use inline SVG instead of placeholder.png
-  const displayImage = 
-    (product?.hasVariants && selectedVariant?.image && selectedVariant.image.trim() !== "")
-      ? selectedVariant.image
-      : product?.image || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect fill='%23f3f4f6' width='400' height='400'/%3E%3C/svg%3E"
-
   const hasColors = parsedVariants.length > 0 && parsedVariants.some(v => v.color)
   const hasSizes = parsedVariants.length > 0 && parsedVariants.some(v => v.size)
+
+  // Image navigation
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % imageGallery.length)
+  }
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + imageGallery.length) % imageGallery.length)
+  }
+
+  const goToImage = (index: number) => {
+    setCurrentImageIndex(index)
+  }
 
   if (loading) {
     return (
@@ -267,27 +302,58 @@ export default function ProductDetailPage() {
       <div className="max-w-7xl mx-auto px-4 py-8 lg:py-12">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-16">
           
-          {/* Product Image - Now changes with variant OR shows main image as fallback */}
+          {/* Product Image Gallery */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="lg:sticky lg:top-24 h-fit"
+            className="lg:sticky lg:top-24 h-fit space-y-4"
           >
-            <motion.div 
-              key={displayImage}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
-              className="relative aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-50 shadow-2xl"
-            >
-              <Image
-                src={displayImage}
-                alt={product.name || "Product"}
-                fill
-                className="object-cover"
-                unoptimized={!displayImage.startsWith('http')}
-              />
+            {/* Main Image with Navigation */}
+            <div className="relative aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-50 shadow-2xl group">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentImageIndex}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="absolute inset-0"
+                >
+                  <Image
+                    src={imageGallery[currentImageIndex]}
+                    alt={`${product.name} - Image ${currentImageIndex + 1}`}
+                    fill
+                    className="object-cover"
+                    unoptimized={!imageGallery[currentImageIndex].startsWith('http')}
+                  />
+                </motion.div>
+              </AnimatePresence>
               
+              {/* Navigation arrows - only show if multiple images */}
+              {imageGallery.length > 1 && (
+                <>
+                  <button
+                    onClick={prevImage}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
+                  >
+                    <ChevronLeft className="h-5 w-5 text-gray-800" />
+                  </button>
+                  <button
+                    onClick={nextImage}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
+                  >
+                    <ChevronRight className="h-5 w-5 text-gray-800" />
+                  </button>
+                </>
+              )}
+
+              {/* Image counter */}
+              {imageGallery.length > 1 && (
+                <div className="absolute bottom-4 right-4 px-3 py-1.5 bg-black/60 backdrop-blur-sm text-white rounded-full text-xs font-semibold">
+                  {currentImageIndex + 1} / {imageGallery.length}
+                </div>
+              )}
+
               {product.section && (
                 <div className="absolute top-4 left-4">
                   <span className="inline-block px-4 py-2 bg-white/90 backdrop-blur-sm text-orange-600 rounded-full text-xs font-bold uppercase shadow-lg">
@@ -295,7 +361,32 @@ export default function ProductDetailPage() {
                   </span>
                 </div>
               )}
-            </motion.div>
+            </div>
+
+            {/* Thumbnail Gallery - only show if multiple images */}
+            {imageGallery.length > 1 && (
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                {imageGallery.map((img, index) => (
+                  <button
+                    key={index}
+                    onClick={() => goToImage(index)}
+                    className={`relative flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${
+                      currentImageIndex === index
+                        ? "border-orange-600 shadow-lg ring-2 ring-orange-100"
+                        : "border-gray-200 hover:border-orange-300 opacity-60 hover:opacity-100"
+                    }`}
+                  >
+                    <Image
+                      src={img}
+                      alt={`Thumbnail ${index + 1}`}
+                      fill
+                      className="object-cover"
+                      unoptimized={!img.startsWith('http')}
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Trust Badges */}
             <div className="mt-6 flex flex-wrap gap-3">
@@ -569,6 +660,16 @@ export default function ProductDetailPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <style jsx global>{`
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
     </div>
   )
 }
