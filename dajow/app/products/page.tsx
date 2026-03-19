@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { getProducts, type Product } from "@/lib/products"
-import { Filter, X, Grid3x3, LayoutGrid, ChevronRight, Search, ArrowLeft } from "lucide-react"
+import { Filter, X, Grid3x3, LayoutGrid, ChevronRight, Search, ArrowLeft, Camera } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { motion, AnimatePresence } from "framer-motion"
@@ -504,7 +504,7 @@ function ProductSection({
   )
 }
 
-// ─── Product Grid ─────────────────────────────────────────────────────────────
+// ─── Product Grid WITH IMAGE PREVIEW ──────────────────────────────────────────
 function ProductGrid({ products, viewMode }: { products: Product[]; viewMode: "grid" | "compact" }) {
   return (
     <motion.div
@@ -515,45 +515,100 @@ function ProductGrid({ products, viewMode }: { products: Product[]; viewMode: "g
         viewMode === "grid" ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-2 md:grid-cols-4 lg:grid-cols-5"
       }`}
     >
-      {products.map((product, index) => (
-        <motion.div 
-          key={`product-${index}`} 
-          variants={itemVariants}
-          transition={{ duration: 0.4 }}
-        >
-          <Link
-            href={`/products/${product.id}`}
-            className="group block bg-white rounded-xl md:rounded-2xl shadow-sm hover:shadow-lg active:scale-95 transition-all duration-200 overflow-hidden border border-gray-100"
+      {products.map((product, index) => {
+        // Build gallery from product.images array + main image
+        const allImages: string[] = []
+        
+        if (product.image && product.image.trim() !== "") {
+          allImages.push(product.image)
+        }
+        
+        if (product.images && Array.isArray(product.images)) {
+          product.images.forEach(img => {
+            if (img && img.trim() !== "" && !allImages.includes(img)) {
+              allImages.push(img)
+            }
+          })
+        }
+        
+        const hasMultipleImages = allImages.length > 1
+        const previewImages = allImages.slice(1, 4) // Show up to 3 thumbnails
+
+        return (
+          <motion.div 
+            key={`product-${index}`} 
+            variants={itemVariants}
+            transition={{ duration: 0.4 }}
           >
-            <div className="relative aspect-square bg-gray-50 overflow-hidden">
-              <img
-                src={product.image && product.image.trim() !== "" ? product.image : "/placeholder.png"}
-                alt={product.name || "Product"}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                onError={e => { e.currentTarget.src = "/placeholder.png" }}
-              />
-              <div className="hidden md:flex absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all items-center justify-center">
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                  <div className="bg-white px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1">
-                    View <ChevronRight className="h-3 w-3" />
+            <Link
+              href={`/products/${product.id}`}
+              className="group block bg-white rounded-xl md:rounded-2xl shadow-sm hover:shadow-lg active:scale-95 transition-all duration-200 overflow-hidden border border-gray-100"
+            >
+              <div className="relative aspect-square bg-gray-50 overflow-hidden">
+                <img
+                  src={allImages[0] || "/placeholder.png"}
+                  alt={product.name || "Product"}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  onError={e => { e.currentTarget.src = "/placeholder.png" }}
+                />
+                
+                {/* Image Count Badge */}
+                {hasMultipleImages && (
+                  <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-white text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-lg">
+                    <Camera className="w-3 h-3" />
+                    {allImages.length}
+                  </div>
+                )}
+                
+                {/* Thumbnail Preview Strip - Shows on hover (desktop only) */}
+                {hasMultipleImages && previewImages.length > 0 && (
+                  <div className="absolute bottom-0 left-0 right-0 p-2.5 bg-gradient-to-t from-black/80 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 hidden md:block">
+                    <div className="flex gap-1.5 justify-center">
+                      {previewImages.map((img, idx) => (
+                        <div
+                          key={idx}
+                          className="w-12 h-12 rounded-lg overflow-hidden border-2 border-white/40 shadow-md hover:scale-110 transition-transform"
+                        >
+                          <img
+                            src={img}
+                            alt={`Preview ${idx + 2}`}
+                            className="w-full h-full object-cover"
+                            onError={e => { e.currentTarget.src = "/placeholder.png" }}
+                          />
+                        </div>
+                      ))}
+                      {allImages.length > 4 && (
+                        <div className="w-12 h-12 rounded-lg bg-black/60 backdrop-blur-sm flex items-center justify-center text-white text-xs font-bold border-2 border-white/40">
+                          +{allImages.length - 4}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                <div className="hidden md:flex absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all items-center justify-center">
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="bg-white px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1">
+                      View <ChevronRight className="h-3 w-3" />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-            <div className="p-2.5 md:p-4 space-y-1">
-              <h3 className="font-semibold text-xs md:text-sm line-clamp-2 leading-tight min-h-[2rem] group-hover:text-orange-600 transition-colors">
-                {product.name}
-              </h3>
-              <p className="text-[10px] md:text-xs text-gray-400 capitalize truncate">
-                {product.category?.replace(/-/g, " ")}
-              </p>
-              <p className="font-bold text-orange-600 text-sm md:text-lg">
-                £{product.price?.toLocaleString() || "0"}
-              </p>
-            </div>
-          </Link>
-        </motion.div>
-      ))}
+              <div className="p-2.5 md:p-4 space-y-1">
+                <h3 className="font-semibold text-xs md:text-sm line-clamp-2 leading-tight min-h-[2rem] group-hover:text-orange-600 transition-colors">
+                  {product.name}
+                </h3>
+                <p className="text-[10px] md:text-xs text-gray-400 capitalize truncate">
+                  {product.category?.replace(/-/g, " ")}
+                </p>
+                <p className="font-bold text-orange-600 text-sm md:text-lg">
+                  £{product.price?.toLocaleString() || "0"}
+                </p>
+              </div>
+            </Link>
+          </motion.div>
+        )
+      })}
     </motion.div>
   )
 }
