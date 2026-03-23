@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { updateProduct } from "@/lib/firestore-products"
 import Image from "next/image"
-import { Save, ArrowLeft, Loader2, Link as LinkIcon, X, Plus, Trash2, Upload } from "lucide-react"
+import { Save, ArrowLeft, Loader2, Link as LinkIcon, X, Plus, Trash2, Upload, Image as ImageIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -33,11 +33,16 @@ export default function EditProductPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
-  // Image URL state
+  // Main image state
   const [imageUrl, setImageUrl] = useState("")
   const [imageUrlInput, setImageUrlInput] = useState("")
   const [imageError, setImageError] = useState(false)
   const [uploading, setUploading] = useState(false)
+
+  // Multiple images gallery state
+  const [additionalImages, setAdditionalImages] = useState<string[]>([])
+  const [newImageUrl, setNewImageUrl] = useState("")
+  const [uploadingGallery, setUploadingGallery] = useState(false)
 
   // Variants state
   const [hasVariants, setHasVariants] = useState(false)
@@ -59,6 +64,13 @@ export default function EditProductPage() {
       setProduct(foundProduct)
       setImageUrl(foundProduct.image || "")
       setImageUrlInput(foundProduct.image || "")
+      
+      // Load additional images if they exist
+      if (foundProduct.images && Array.isArray(foundProduct.images)) {
+        // Filter out the main image from additional images
+        const additionalOnly = foundProduct.images.filter((img: string) => img !== foundProduct.image)
+        setAdditionalImages(additionalOnly)
+      }
       
       // Load variants if they exist
       if (foundProduct.hasVariants && foundProduct.variants && Array.isArray(foundProduct.variants)) {
@@ -104,7 +116,6 @@ export default function EditProductPage() {
     // Validate file size (max 5MB for data URLs work best)
     if (file.size > 5 * 1024 * 1024) {
       alert('⚠️ Image is larger than 5MB. For best performance, use smaller images or compress them first.')
-      // Still allow it, but warn the user
     }
 
     setUploading(true)
@@ -131,9 +142,71 @@ export default function EditProductPage() {
       alert('⚠️ Failed to convert image. Please try again.')
     } finally {
       setUploading(false)
-      // Clear the file input
       e.target.value = ''
     }
+  }
+
+  // Gallery image upload
+  async function handleGalleryImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
+    if (!validTypes.includes(file.type)) {
+      alert('Please upload a valid image file (JPG, PNG, WEBP, or GIF)')
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('⚠️ Image is larger than 5MB. Consider compressing.')
+    }
+
+    setUploadingGallery(true)
+
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
+
+      setAdditionalImages([...additionalImages, dataUrl])
+      alert('✅ Gallery image added!')
+    } catch (error) {
+      console.error('Image conversion error:', error)
+      alert('⚠️ Failed to convert image.')
+    } finally {
+      setUploadingGallery(false)
+      e.target.value = ''
+    }
+  }
+
+  // Add image URL to gallery
+  function addImageUrlToGallery() {
+    if (!newImageUrl.trim()) return
+    setAdditionalImages([...additionalImages, newImageUrl.trim()])
+    setNewImageUrl("")
+  }
+
+  // Remove image from gallery
+  function removeImageFromGallery(index: number) {
+    setAdditionalImages(additionalImages.filter((_, i) => i !== index))
+  }
+
+  // Reorder images
+  function moveImageUp(index: number) {
+    if (index === 0) return
+    const newImages = [...additionalImages]
+    ;[newImages[index - 1], newImages[index]] = [newImages[index], newImages[index - 1]]
+    setAdditionalImages(newImages)
+  }
+
+  function moveImageDown(index: number) {
+    if (index === additionalImages.length - 1) return
+    const newImages = [...additionalImages]
+    ;[newImages[index], newImages[index + 1]] = [newImages[index + 1], newImages[index]]
+    setAdditionalImages(newImages)
   }
 
   // Variant image upload to data URL
@@ -141,37 +214,30 @@ export default function EditProductPage() {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Validate file type
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
     if (!validTypes.includes(file.type)) {
       alert('Please upload a valid image file (JPG, PNG, WEBP, or GIF)')
       return
     }
 
-    // Validate file size
     if (file.size > 5 * 1024 * 1024) {
       alert('⚠️ Image is larger than 5MB. For best performance, use smaller images.')
     }
 
     try {
-      // Convert file to base64 data URL
       const dataUrl = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader()
-        reader.onloadend = () => {
-          resolve(reader.result as string)
-        }
+        reader.onloadend = () => resolve(reader.result as string)
         reader.onerror = reject
         reader.readAsDataURL(file)
       })
 
-      // Update the variant image
       updateVariant(variantIndex, "image", dataUrl)
       alert('✅ Variant image converted successfully!')
     } catch (error) {
       console.error('Image conversion error:', error)
       alert('⚠️ Failed to convert image.')
     } finally {
-      // Clear the file input
       e.target.value = ''
     }
   }
@@ -204,7 +270,6 @@ export default function EditProductPage() {
   function toggleHasVariants(enabled: boolean) {
     setHasVariants(enabled)
     if (enabled && variants.length === 0) {
-      // Add first variant by default
       addVariant()
     }
   }
@@ -219,6 +284,9 @@ export default function EditProductPage() {
       const data = new FormData(form)
       const name = data.get("name") as string
 
+      // Combine main image + additional images into images array
+      const allImages = [imageUrl, ...additionalImages].filter(img => img && img.trim() !== "")
+
       const updateData: any = {
         name,
         slug: generateSlug(name),
@@ -226,6 +294,7 @@ export default function EditProductPage() {
         category: data.get("category") as string,
         section: data.get("section") as string,
         image: imageUrl,
+        images: allImages,  // ← Save all images here
         description: data.get("description") as string,
         inStock: data.get("inStock") === "on",
         hasVariants: hasVariants
@@ -234,7 +303,6 @@ export default function EditProductPage() {
       // Add variants if enabled
       if (hasVariants && variants.length > 0) {
         updateData.variants = variants.filter(v => {
-          // Only include variants that have required fields
           const hasRequiredField = variantType === "size" ? v.size : v.color
           return hasRequiredField && v.price > 0
         })
@@ -410,14 +478,12 @@ export default function EditProductPage() {
             </div>
           </div>
 
-          {/* Image Card */}
+          {/* Main Image Card */}
           <div className="bg-white rounded-xl shadow-sm border p-6 space-y-5">
             <div>
-              <Label className="text-sm font-semibold">Product Image</Label>
+              <Label className="text-sm font-semibold">Main Product Image</Label>
               <p className="text-sm text-gray-500 mt-1">
-                {hasVariants 
-                  ? "This is the default/fallback image. You can set specific images for each variant below."
-                  : "Upload an image file (converts to data URL) or paste a direct image URL"}
+                This is the primary image shown on product cards
               </p>
             </div>
 
@@ -444,24 +510,22 @@ export default function EditProductPage() {
                   ) : (
                     <>
                       <Upload className="h-4 w-4 text-orange-600" />
-                      <span className="text-sm font-medium text-orange-600">Convert Image File to URL</span>
+                      <span className="text-sm font-medium text-orange-600">Upload Main Image</span>
                     </>
                   )}
                 </div>
               </label>
             </div>
 
-            {/* Info about data URLs */}
             {imageUrl && imageUrl.startsWith('data:image') && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                 <p className="text-xs font-semibold text-green-800 mb-1">✅ Image Embedded as Data URL</p>
                 <p className="text-xs text-green-700">
-                  Your image is now stored directly in the URL - no external hosting needed!
+                  Your image is stored directly - no external hosting needed!
                 </p>
               </div>
             )}
 
-            {/* Divider */}
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-200" />
@@ -471,7 +535,6 @@ export default function EditProductPage() {
               </div>
             </div>
 
-            {/* URL Input */}
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -495,7 +558,6 @@ export default function EditProductPage() {
               )}
             </div>
 
-            {/* Live preview */}
             {imageUrl && !imageError && (
               <div className="rounded-xl overflow-hidden border-2 border-gray-100 bg-gray-50 w-full max-w-xs mx-auto">
                 <div className="relative aspect-square">
@@ -508,25 +570,159 @@ export default function EditProductPage() {
                     onError={() => setImageError(true)}
                   />
                 </div>
-                <p className="text-xs text-center text-gray-400 py-2">Preview</p>
+                <p className="text-xs text-center text-gray-400 py-2">Main Image Preview</p>
               </div>
             )}
 
-            {/* Error state */}
             {imageError && imageUrl && (
               <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
                 <X className="h-5 w-5 text-red-500 flex-shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-red-700">Image URL couldn't load</p>
                   <p className="text-xs text-red-500 mt-0.5">
-                    Make sure the URL ends in .jpg, .png, .webp or is a direct image link
+                    Make sure the URL is a direct image link
                   </p>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Variants Card */}
+          {/* Image Gallery Card */}
+          <div className="bg-white rounded-xl shadow-sm border p-6 space-y-5">
+            <div>
+              <Label className="text-sm font-semibold flex items-center gap-2">
+                <ImageIcon className="h-4 w-4" />
+                Image Gallery ({additionalImages.length} additional images)
+              </Label>
+              <p className="text-sm text-gray-500 mt-1">
+                Add more images to show in the product gallery slider
+              </p>
+            </div>
+
+            {/* Upload Gallery Image */}
+            <div className="flex gap-2">
+              <label className="flex-1">
+                <input
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                  onChange={handleGalleryImageUpload}
+                  className="hidden"
+                  disabled={uploadingGallery}
+                />
+                <div className={`flex items-center justify-center gap-2 h-10 px-4 rounded-lg border-2 border-dashed transition cursor-pointer ${
+                  uploadingGallery 
+                    ? "bg-gray-100 border-gray-300 cursor-not-allowed" 
+                    : "bg-blue-50 border-blue-300 hover:bg-blue-100 hover:border-blue-400"
+                }`}>
+                  {uploadingGallery ? (
+                    <>
+                      <Loader2 className="h-3 w-3 text-blue-600 animate-spin" />
+                      <span className="text-sm font-medium text-blue-600">Converting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-3 w-3 text-blue-600" />
+                      <span className="text-sm font-medium text-blue-600">Add Gallery Image</span>
+                    </>
+                  )}
+                </div>
+              </label>
+            </div>
+
+            {/* Or paste URL */}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400" />
+                <Input
+                  value={newImageUrl}
+                  onChange={(e) => setNewImageUrl(e.target.value)}
+                  placeholder="Or paste image URL..."
+                  className="h-10 pl-9 text-sm"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      addImageUrlToGallery()
+                    }
+                  }}
+                />
+              </div>
+              <Button
+                type="button"
+                onClick={addImageUrlToGallery}
+                size="sm"
+                className="h-10 bg-blue-600 hover:bg-blue-700"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Gallery Images Grid */}
+            {additionalImages.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {additionalImages.map((img, index) => (
+                  <div key={index} className="relative group border-2 border-gray-200 rounded-lg overflow-hidden">
+                    <div className="relative aspect-square">
+                      <Image
+                        src={img}
+                        alt={`Gallery ${index + 1}`}
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                    </div>
+                    
+                    {/* Overlay controls */}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                      <button
+                        type="button"
+                        onClick={() => moveImageUp(index)}
+                        disabled={index === 0}
+                        className="p-2 bg-white rounded-full hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Move up"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveImageDown(index)}
+                        disabled={index === additionalImages.length - 1}
+                        className="p-2 bg-white rounded-full hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Move down"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeImageFromGallery(index)}
+                        className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
+                        title="Remove"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                    
+                    <div className="absolute top-2 left-2 bg-black/70 text-white text-xs font-bold px-2 py-1 rounded">
+                      #{index + 2}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {additionalImages.length === 0 && (
+              <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-lg">
+                <ImageIcon className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                <p className="text-sm text-gray-500">No additional images yet</p>
+                <p className="text-xs text-gray-400">Upload or paste URLs to add gallery images</p>
+              </div>
+            )}
+          </div>
+
+          {/* Variants Card - keeping existing code */}
           <div className="bg-white rounded-xl shadow-sm border p-6 space-y-6">
             <div className="flex items-start justify-between">
               <div>
@@ -599,7 +795,6 @@ export default function EditProductPage() {
                       </div>
 
                       <div className="grid md:grid-cols-2 gap-4">
-                        {/* Size or Color */}
                         <div>
                           <Label className="text-xs font-semibold mb-2">
                             {variantType === "size" ? "Size *" : "Color *"}
@@ -612,7 +807,6 @@ export default function EditProductPage() {
                           />
                         </div>
 
-                        {/* Price */}
                         <div>
                           <Label className="text-xs font-semibold mb-2">
                             Price (£) *
@@ -628,13 +822,11 @@ export default function EditProductPage() {
                         </div>
                       </div>
 
-                      {/* Variant Image */}
                       <div>
                         <Label className="text-xs font-semibold mb-2">
                           Variant Image (Optional)
                         </Label>
                         
-                        {/* Upload Button for Variant */}
                         <label className="block mb-2">
                           <input
                             type="file"
@@ -677,7 +869,6 @@ export default function EditProductPage() {
                   ))}
                 </div>
 
-                {/* Add Variant Button */}
                 <Button
                   type="button"
                   variant="outline"
@@ -688,7 +879,6 @@ export default function EditProductPage() {
                   Add {variantType === "size" ? "Size" : "Color"} Variant
                 </Button>
 
-                {/* Variants Info */}
                 <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
                   <p className="text-xs font-semibold text-blue-800 mb-2">💡 Variant Tips:</p>
                   <ul className="text-xs text-blue-700 space-y-1">
