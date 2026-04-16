@@ -161,6 +161,36 @@ export default function CartPage() {
         },
       })
 
+      // Send receipt email to admin
+fetch("/api/send-receipt", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    order: {
+      orderId,
+      customerName: shippingDetails.fullName,
+      customerEmail: shippingDetails.email,
+      customerPhone: shippingDetails.phone,
+      address: {
+        address: shippingDetails.address,
+        city: shippingDetails.city,
+        state: shippingDetails.state,
+        postalCode: shippingDetails.postalCode,
+      },
+      deliveryLocation: shippingDetails.deliveryLocation,
+      items: items.map((item) => ({
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+      })),
+      subtotal,
+      shippingAmount,
+      total,
+      paymentMethod,
+    },
+  }),
+}).catch(console.error) // fire-and-forget, don't block checkout
+
       // STRIPE PAYMENT
       if (paymentMethod === "stripe") {
         const res = await fetch("/api/checkout", {
