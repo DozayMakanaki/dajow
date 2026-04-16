@@ -277,7 +277,7 @@ fetch("/api/send-receipt", {
             href="/products"
             className="inline-flex items-center gap-2 bg-orange-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-orange-700 transition"
           >
-            Start Shopping
+            Start Shopping.
             <ArrowRight className="h-5 w-5" />
           </Link>
         </div>
