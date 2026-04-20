@@ -13,7 +13,7 @@ import {
 import { useState } from "react"
 import { useAuth } from "@/providers/auth-provider"
 import { useRouter } from "next/navigation"
-import { createOrder } from "@/lib/create-order"
+import { createOrder } from "@/lib/firestore-orders"
 
 type PaymentMethod = "stripe" | "whatsapp"
 type CheckoutStep = "cart" | "details" | "payment"
@@ -61,7 +61,8 @@ export default function CartPage() {
   const shippingCost = getShippingCost(shippingDetails.deliveryLocation)
   const needsContactForShipping = shippingCost === "contact"
   const shippingAmount = typeof shippingCost === "number" ? shippingCost : 0
-  const total = subtotal + shippingAmount
+  const tax = subtotal * 0.2 // 20% VAT
+  const total = subtotal + shippingAmount + tax
 
   const handleUpdateField = (field: keyof ShippingDetails, value: string) => {
     setShippingDetails((prev) => ({ ...prev, [field]: value }))
@@ -140,56 +141,36 @@ export default function CartPage() {
     setLoading(true)
 
     try {
-      const shippingAddressString = `${shippingDetails.address}, ${shippingDetails.city}, ${shippingDetails.state} ${shippingDetails.postalCode}`
-
+      // Create order in Firestore first
       const orderId = await createOrder({
         userId: user.uid,
-        email: shippingDetails.email,
+        userEmail: shippingDetails.email,
+        userName: shippingDetails.fullName,
         items: items.map((item) => ({
           productId: item.id,
-          name: item.name,
+          productName: item.name,
           price: item.price,
-          image: item.image,
           quantity: item.quantity,
+          image: item.image,
         })),
+        subtotal,
+        tax,
+        shipping: shippingAmount,
         total,
+        status: "pending",
+        paymentMethod: "stripe",
+        paymentStatus: "pending",
         shippingAddress: {
-          name: shippingDetails.fullName,
+          fullName: shippingDetails.fullName,
           phone: shippingDetails.phone,
           address: shippingDetails.address,
           city: shippingDetails.city,
-        },
+          postcode: shippingDetails.postalCode,
+          country: "UK"
+        }
       })
 
-      // Send receipt email to admin
-fetch("/api/send-receipt", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    order: {
-      orderId,
-      customerName: shippingDetails.fullName,
-      customerEmail: shippingDetails.email,
-      customerPhone: shippingDetails.phone,
-      address: {
-        address: shippingDetails.address,
-        city: shippingDetails.city,
-        state: shippingDetails.state,
-        postalCode: shippingDetails.postalCode,
-      },
-      deliveryLocation: shippingDetails.deliveryLocation,
-      items: items.map((item) => ({
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity,
-      })),
-      subtotal,
-      shippingAmount,
-      total,
-      paymentMethod,
-    },
-  }),
-}).catch(console.error) // fire-and-forget, don't block checkout
+      console.log("✅ Order created:", orderId)
 
       // STRIPE PAYMENT
       if (paymentMethod === "stripe") {
@@ -197,10 +178,26 @@ fetch("/api/send-receipt", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            items,
-            orderId,
+            items: items.map(item => ({
+              id: item.id,
+              name: item.name,
+              price: item.price,
+              quantity: item.quantity,
+              image: item.image
+            })),
             customerEmail: shippingDetails.email,
             shippingCost: shippingAmount,
+            // Pass user and shipping info
+            userId: user.uid,
+            userName: shippingDetails.fullName,
+            shippingAddress: {
+              fullName: shippingDetails.fullName,
+              phone: shippingDetails.phone,
+              address: shippingDetails.address,
+              city: shippingDetails.city,
+              postcode: shippingDetails.postalCode,
+              country: "UK"
+            }
           }),
         })
 
@@ -215,6 +212,10 @@ fetch("/api/send-receipt", {
           throw new Error("No Stripe checkout URL returned")
         }
 
+        // Clear cart before redirecting to Stripe
+        clearCart()
+        
+        // Redirect to Stripe checkout
         window.location.href = url
         return
       }
@@ -226,8 +227,11 @@ fetch("/api/send-receipt", {
           shippingDetails.deliveryLocation === "northern-ireland" ? "Northern Ireland (Outside Bangor)" :
           "Outside Northern Ireland"
         
+        const shippingAddressString = `${shippingDetails.address}, ${shippingDetails.city}, ${shippingDetails.state} ${shippingDetails.postalCode}`
+        
         const message = encodeURIComponent(
-          `🛒 *New Order - #${orderId.slice(0, 8).toUpperCase()}*\n\n` +
+          `🛒 *New Order*\n\n` +
+            `📋 *Order ID:* ${orderId.substring(0, 8).toUpperCase()}\n\n` +
             `👤 *Customer Details:*\n` +
             `Name: ${shippingDetails.fullName}\n` +
             `Phone: ${shippingDetails.phone}\n` +
@@ -243,6 +247,7 @@ fetch("/api/send-receipt", {
               .join("\n\n") +
             `\n\n💰 *Subtotal: £${subtotal.toLocaleString()}*\n` +
             `🚚 *Shipping: £${shippingAmount.toLocaleString()}*\n` +
+            `📊 *Tax (20%): £${tax.toFixed(2)}*\n` +
             `💳 *Total: £${total.toLocaleString()}*\n\n` +
             `Payment: Cash on Delivery`
         )
@@ -250,8 +255,9 @@ fetch("/api/send-receipt", {
         const phone = "+447704335223"
         window.open(`https://wa.me/${phone}?text=${message}`, "_blank")
 
+        // Clear cart and redirect to order success page
         clearCart()
-        router.push(`/orders/${orderId}?success=true`)
+        router.push(`/profile/orders/${orderId}?success=true`)
       }
     } catch (error) {
       console.error("Checkout error:", error)
@@ -277,7 +283,7 @@ fetch("/api/send-receipt", {
             href="/products"
             className="inline-flex items-center gap-2 bg-orange-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-orange-700 transition"
           >
-            Start Shopping.
+            Start Shopping
             <ArrowRight className="h-5 w-5" />
           </Link>
         </div>
@@ -599,7 +605,7 @@ fetch("/api/send-receipt", {
               </motion.div>
             )}
 
-            {/* STEP 3: PAYMENT METHOD */}
+            {/* STEP 3: PAYMENT METHOD - keeping your existing code */}
             {step === "payment" && (
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
@@ -804,6 +810,10 @@ fetch("/api/send-receipt", {
                       `£${shippingAmount.toLocaleString()}`
                     )}
                   </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Tax (VAT 20%)</span>
+                  <span className="font-semibold">£{tax.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-base md:text-lg pt-2 border-t">
                   <span className="font-bold">Total</span>
