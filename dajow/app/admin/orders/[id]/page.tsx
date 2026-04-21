@@ -25,6 +25,13 @@ export default function AdminOrderDetailPage() {
     getOrderById(orderId)
       .then((data) => {
         console.log("✅ Order received:", data)
+        // Ensure all numeric fields have safe defaults
+        if (data) {
+          data.subtotal = data.subtotal ?? 0
+          data.shipping = data.shipping ?? 0
+          data.tax = data.tax ?? 0
+          data.total = data.total ?? 0
+        }
         setOrder(data)
         setError(null)
       })
@@ -174,16 +181,16 @@ export default function AdminOrderDetailPage() {
                       {item.productName}
                     </h3>
                     <p className="text-sm text-gray-600">
-                      Quantity: {item.quantity}
+                      Quantity: {item.quantity ?? 0}
                     </p>
                     <p className="text-sm text-gray-600">
-                      Price: £{item.price.toFixed(2)} each
+                      Price: £{(item.price ?? 0).toFixed(2)} each
                     </p>
                   </div>
 
                   <div className="text-right">
                     <p className="font-bold text-orange-600">
-                      £{(item.price * item.quantity).toFixed(2)}
+                      £{((item.price ?? 0) * (item.quantity ?? 0)).toFixed(2)}
                     </p>
                   </div>
                 </div>
@@ -194,21 +201,21 @@ export default function AdminOrderDetailPage() {
             <div className="mt-6 pt-6 border-t space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Subtotal</span>
-                <span className="font-semibold">£{order.subtotal.toFixed(2)}</span>
+                <span className="font-semibold">£{(order.subtotal ?? 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Shipping</span>
                 <span className="font-semibold">
-                  {order.shipping === 0 ? 'FREE' : `£${order.shipping.toFixed(2)}`}
+                  {(order.shipping ?? 0) === 0 ? 'FREE' : `£${(order.shipping ?? 0).toFixed(2)}`}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Tax (VAT 20%)</span>
-                <span className="font-semibold">£{order.tax.toFixed(2)}</span>
+                <span className="font-semibold">£{(order.tax ?? 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-lg font-bold pt-2 border-t">
                 <span>Total</span>
-                <span className="text-orange-600">£{order.total.toFixed(2)}</span>
+                <span className="text-orange-600">£{(order.total ?? 0).toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -302,8 +309,6 @@ export default function AdminOrderDetailPage() {
                   {order.paymentStatus}
                 </span>
               </div>
-
-
             </div>
           </div>
 
