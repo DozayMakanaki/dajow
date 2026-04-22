@@ -249,7 +249,7 @@ export default function CartPage() {
             `🚚 *Shipping: £${shippingAmount.toLocaleString()}*\n` +
             `📊 *Tax (20%): £${tax.toFixed(2)}*\n` +
             `💳 *Total: £${total.toLocaleString()}*\n\n` +
-            `Payment: Cash on Delivery`
+            ``
         )
 
         const phone = "+447704335223"
@@ -677,12 +677,7 @@ export default function CartPage() {
                           <MessageCircle className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
                           <p className="font-semibold text-sm md:text-base">Order via WhatsApp</p>
                         </div>
-                        <p className="text-xs md:text-sm text-gray-500 mb-2">
-                          Send order via WhatsApp and pay on delivery
-                        </p>
-                        <span className="inline-block text-[10px] md:text-xs font-semibold bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                          Cash on Delivery
-                        </span>
+                       
                       </div>
                     </label>
                   </div>
