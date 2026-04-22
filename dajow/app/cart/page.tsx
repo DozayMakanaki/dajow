@@ -62,7 +62,7 @@ export default function CartPage() {
   const needsContactForShipping = shippingCost === "contact"
   const shippingAmount = typeof shippingCost === "number" ? shippingCost : 0
   
-  const total = subtotal + shippingAmount 
+  const total = subtotal + shippingAmount
 
   const handleUpdateField = (field: keyof ShippingDetails, value: string) => {
     setShippingDetails((prev) => ({ ...prev, [field]: value }))
@@ -154,7 +154,7 @@ export default function CartPage() {
           image: item.image,
         })),
         subtotal,
-        tax,
+        tax: 0,
         shipping: shippingAmount,
         total,
         status: "pending",
@@ -187,7 +187,6 @@ export default function CartPage() {
             })),
             customerEmail: shippingDetails.email,
             shippingCost: shippingAmount,
-            // Pass user and shipping info
             userId: user.uid,
             userName: shippingDetails.fullName,
             shippingAddress: {
@@ -212,10 +211,7 @@ export default function CartPage() {
           throw new Error("No Stripe checkout URL returned")
         }
 
-        // Clear cart before redirecting to Stripe
         clearCart()
-        
-        // Redirect to Stripe checkout
         window.location.href = url
         return
       }
@@ -247,15 +243,12 @@ export default function CartPage() {
               .join("\n\n") +
             `\n\n💰 *Subtotal: £${subtotal.toLocaleString()}*\n` +
             `🚚 *Shipping: £${shippingAmount.toLocaleString()}*\n` +
-            `📊 *Tax (20%): £${tax.toFixed(2)}*\n` +
-            `💳 *Total: £${total.toLocaleString()}*\n\n` +
-            ``
+            `💳 *Total: £${total.toLocaleString()}*\n\n`
         )
 
         const phone = "+447704335223"
         window.open(`https://wa.me/${phone}?text=${message}`, "_blank")
 
-        // Clear cart and redirect to order success page
         clearCart()
         router.push(`/profile/orders/${orderId}?success=true`)
       }
@@ -605,7 +598,7 @@ export default function CartPage() {
               </motion.div>
             )}
 
-            {/* STEP 3: PAYMENT METHOD - keeping your existing code */}
+            {/* STEP 3: PAYMENT METHOD */}
             {step === "payment" && (
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
@@ -677,7 +670,6 @@ export default function CartPage() {
                           <MessageCircle className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
                           <p className="font-semibold text-sm md:text-base">Order via WhatsApp</p>
                         </div>
-                       
                       </div>
                     </label>
                   </div>
@@ -805,10 +797,6 @@ export default function CartPage() {
                       `£${shippingAmount.toLocaleString()}`
                     )}
                   </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Tax (VAT 20%)</span>
-                  <span className="font-semibold">£{tax.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-base md:text-lg pt-2 border-t">
                   <span className="font-bold">Total</span>
