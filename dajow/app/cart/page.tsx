@@ -61,8 +61,8 @@ export default function CartPage() {
   const shippingCost = getShippingCost(shippingDetails.deliveryLocation)
   const needsContactForShipping = shippingCost === "contact"
   const shippingAmount = typeof shippingCost === "number" ? shippingCost : 0
-  const tax = subtotal * 0.2 // 20% VAT
-  const total = subtotal + shippingAmount + tax
+  
+  const total = subtotal + shippingAmount 
 
   const handleUpdateField = (field: keyof ShippingDetails, value: string) => {
     setShippingDetails((prev) => ({ ...prev, [field]: value }))
