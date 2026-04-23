@@ -1,21 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { collection, query, where, getDocs, orderBy } from "firebase/firestore"
-import { db } from "@/lib/firebase"
+import { getUserOrders, type Order } from "@/lib/firestore-orders"
 import Link from "next/link"
 import Image from "next/image"
-import { Package, Clock, CheckCircle, XCircle, TruckIcon, Eye } from "lucide-react"
+import { Package, Clock, CheckCircle, XCircle, TruckIcon, Eye, Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
-
-interface Order {
-  id: string
-  items: any[]
-  total: number
-  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled"
-  createdAt: any
-  shippingAddress: string
-}
 
 const statusConfig = {
   pending: { icon: Clock, color: "text-yellow-600", bg: "bg-yellow-50", label: "Pending" },
@@ -36,25 +26,17 @@ export default function ProfileOrders({ userId, onStatsUpdate }: { userId: strin
 
   async function loadOrders() {
     try {
-      const ordersRef = collection(db, "orders")
-      const q = query(
-        ordersRef,
-        where("userId", "==", userId),
-        orderBy("createdAt", "desc")
-      )
+      console.log("🔍 Fetching orders for user:", userId)
       
-      const snapshot = await getDocs(q)
-      const ordersList = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Order[]
-
+      const ordersList = await getUserOrders(userId)
+      console.log("✅ Orders received:", ordersList)
+      
       setOrders(ordersList)
 
       // Update stats
       if (onStatsUpdate) {
         const totalSpent = ordersList
-          .filter(o => o.status !== 'cancelled')
+          .filter(o => o.paymentStatus === 'paid')
           .reduce((sum, order) => sum + order.total, 0)
         
         onStatsUpdate({
@@ -63,7 +45,7 @@ export default function ProfileOrders({ userId, onStatsUpdate }: { userId: strin
         })
       }
     } catch (error) {
-      console.error("Error loading orders:", error)
+      console.error("❌ Error loading orders:", error)
     } finally {
       setLoading(false)
     }
@@ -75,11 +57,10 @@ export default function ProfileOrders({ userId, onStatsUpdate }: { userId: strin
 
   if (loading) {
     return (
-      <div className="p-8">
-        <div className="space-y-4">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-32 bg-gray-100 rounded-lg animate-pulse" />
-          ))}
+      <div className="p-8 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-orange-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading your orders...</p>
         </div>
       </div>
     )
@@ -143,9 +124,9 @@ export default function ProfileOrders({ userId, onStatsUpdate }: { userId: strin
           {filteredOrders.map((order, index) => {
             const StatusIcon = statusConfig[order.status].icon
             const date = order.createdAt?.toDate 
-              ? order.createdAt.toDate().toLocaleDateString('en-US', { 
+              ? order.createdAt.toDate().toLocaleDateString('en-GB', { 
+                  day: '2-digit',
                   month: 'short', 
-                  day: 'numeric', 
                   year: 'numeric' 
                 })
               : 'Recent'
@@ -161,8 +142,10 @@ export default function ProfileOrders({ userId, onStatsUpdate }: { userId: strin
                 {/* Order Header */}
                 <div className="bg-gray-50 px-6 py-4 flex flex-wrap items-center justify-between gap-4">
                   <div>
-                    <p className="text-xs text-gray-500 mb-1">Order ID</p>
-                    <p className="font-mono font-semibold text-sm">#{order.id.slice(0, 8).toUpperCase()}</p>
+                    <p className="text-xs text-gray-500 mb-1">Order Number</p>
+                    <p className="font-mono font-semibold text-sm">
+                      {order.orderNumber || order.id?.slice(0, 8).toUpperCase()}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Date</p>
@@ -170,7 +153,7 @@ export default function ProfileOrders({ userId, onStatsUpdate }: { userId: strin
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Total</p>
-                    <p className="font-bold text-orange-600">₦{order.total.toLocaleString()}</p>
+                    <p className="font-bold text-orange-600">£{order.total.toFixed(2)}</p>
                   </div>
                   <div>
                     <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${statusConfig[order.status].bg}`}>
@@ -184,33 +167,28 @@ export default function ProfileOrders({ userId, onStatsUpdate }: { userId: strin
 
                 {/* Order Items */}
                 <div className="p-6 space-y-3">
-                  {order.items.slice(0, 2).map((item, idx) => {
-                    const imageUrl = item.image && item.image.trim() !== "" 
-                      ? item.image 
-                      : "/placeholder.png"
-
-                    return (
-                      <div key={idx} className="flex items-center gap-4">
-                        <div className="relative w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                          <Image
-                            src={imageUrl}
-                            alt={item.name}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{item.name}</p>
-                          <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
-                        </div>
-                        <p className="font-semibold text-sm">₦{(item.price * item.quantity).toLocaleString()}</p>
+                  {order.items.slice(0, 2).map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-4">
+                      <div className="relative w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                        <Image
+                          src={item.image || "/placeholder.png"}
+                          alt={item.productName}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
                       </div>
-                    )
-                  })}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{item.productName}</p>
+                        <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                      </div>
+                      <p className="font-semibold text-sm">£{(item.price * item.quantity).toFixed(2)}</p>
+                    </div>
+                  ))}
 
                   {order.items.length > 2 && (
                     <p className="text-xs text-gray-500 text-center pt-2">
-                      +{order.items.length - 2} more items
+                      +{order.items.length - 2} more item{order.items.length - 2 !== 1 ? 's' : ''}
                     </p>
                   )}
                 </div>
@@ -218,14 +196,14 @@ export default function ProfileOrders({ userId, onStatsUpdate }: { userId: strin
                 {/* Order Footer */}
                 <div className="bg-gray-50 px-6 py-3 flex items-center justify-between">
                   <p className="text-xs text-gray-600">
-                    Ship to: {order.shippingAddress || "Default address"}
+                    Ship to: {order.shippingAddress?.city || order.shippingAddress?.fullName || "Address on file"}
                   </p>
                   <Link
-                    href={`/orders/${order.id}`}
+                    href={`/profile/orders/${order.id}`}
                     className="flex items-center gap-2 text-sm font-semibold text-orange-600 hover:text-orange-700"
                   >
                     <Eye className="h-4 w-4" />
-                    View Details
+                    View Receipt
                   </Link>
                 </div>
               </motion.div>
