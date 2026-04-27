@@ -1,50 +1,50 @@
 import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
-import { createOrder } from "@/lib/firestore-orders"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {})
 
 export async function POST(req: NextRequest) {
   try {
-    // ✅ Use request origin — works on localhost, Vercel previews & production automatically
     const origin =
       req.headers.get("origin") ||
       req.headers.get("referer")?.split("/").slice(0, 3).join("/") ||
       "http://localhost:3000"
 
-    const { 
-      items, 
-      orderId, 
-      customerEmail, 
+    const {
+      items,
+      customerEmail,
       shippingCost,
-      // NEW: User and shipping info
       userId,
       userName,
-      shippingAddress
+      shippingAddress,
     } = await req.json()
 
     if (!items || items.length === 0) {
       return NextResponse.json({ error: "No items in cart" }, { status: 400 })
     }
 
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.error("STRIPE_SECRET_KEY is not set")
+      return NextResponse.json({ error: "Stripe is not configured" }, { status: 500 })
+    }
+
+    // Build line items from cart
     const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = items.map(
       (item: { name: string; price: number; image?: string; quantity: number }) => ({
         price_data: {
           currency: "gbp",
           product_data: {
             name: item.name,
-            images: item.image ? [item.image] : undefined,
+            ...(item.image ? { images: [item.image] } : {}),
           },
-          unit_amount: Math.round(item.price * 100),
+          unit_amount: Math.round(item.price * 100), // convert £ to pence
         },
         quantity: item.quantity,
       })
     )
 
-    // Use shipping cost passed from cart (location-based)
-    const shipping = shippingCost || 0
-
-    // Add shipping line item
+    // Add shipping as a separate line item if applicable
+    const shipping = typeof shippingCost === "number" ? shippingCost : 0
     if (shipping > 0) {
       lineItems.push({
         price_data: {
@@ -56,71 +56,34 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // Calculate totals
-    const subtotal = items.reduce((sum: number, item: any) => 
-      sum + (item.price * item.quantity), 0
-    )
-    const tax = subtotal * 0.2 // 20% VAT
-
-    // Create order in Firestore BEFORE payment
-    // Status will be "pending" until payment succeeds
-    const firestoreOrderId = await createOrder({
-      userId: userId || "guest",
-      userEmail: customerEmail,
-      userName: userName || "",
-      items: items.map((item: any) => ({
-        productId: item.id || "",
-        productName: item.name,
-        price: item.price,
-        quantity: item.quantity,
-        image: item.image
-      })),
-      subtotal,
-      tax,
-      shipping,
-      total: subtotal + tax + shipping,
-      status: "pending",
-      paymentMethod: "stripe",
-      paymentStatus: "pending",
-      shippingAddress: shippingAddress || {
-        fullName: userName || "Guest",
-        phone: "",
-        address: "",
-        city: "",
-        postcode: "",
-        country: "UK"
-      }
-    })
-
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: lineItems,
       mode: "payment",
       customer_email: customerEmail,
-      metadata: { 
-        orderId: firestoreOrderId, // Use Firestore order ID
+      metadata: {
         userId: userId || "guest",
-        items: JSON.stringify(items)
+        userName: userName || "",
       },
-      success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}&order_id=${firestoreOrderId}`,
+      success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/cart?cancelled=true`,
-      payment_intent_data: { 
-        metadata: { 
-          orderId: firestoreOrderId,
-          userId: userId || "guest"
-        } 
+      payment_intent_data: {
+        metadata: {
+          userId: userId || "guest",
+        },
       },
     })
 
-    return NextResponse.json({ 
-      url: session.url, 
+    return NextResponse.json({
+      url: session.url,
       sessionId: session.id,
-      orderId: firestoreOrderId 
     })
   } catch (error) {
     console.error("Stripe checkout error:", error)
+    // Log the actual error message to help debug
+    const message = error instanceof Error ? error.message : "Unknown error"
     return NextResponse.json(
-      { error: "Failed to create checkout session" },
+      { error: "Failed to create checkout session", detail: message },
       { status: 500 }
     )
   }
