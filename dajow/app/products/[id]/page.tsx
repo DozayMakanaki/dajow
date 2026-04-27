@@ -452,7 +452,7 @@ export default function ProductDetailPage() {
                   </span>
                 )}
               </motion.div>
-              <p className="text-sm text-gray-500 mt-2">Tax included • Free shipping over £50</p>
+             
             </div>
 
             {/* Color Selector */}
