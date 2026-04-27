@@ -29,19 +29,30 @@ export async function POST(req: NextRequest) {
     }
 
     // Build line items from cart
-    const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = items.map(
-      (item: { name: string; price: number; image?: string; quantity: number }) => ({
-        price_data: {
-          currency: "gbp",
-          product_data: {
-            name: item.name,
-            ...(item.image ? { images: [item.image] } : {}),
-          },
-          unit_amount: Math.round(item.price * 100), // convert £ to pence
+   // Build line items from cart
+const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = items.map(
+  (item: { name: string; price: number; image?: string; quantity: number }) => {
+    // Only include image if it's a valid short HTTPS URL (Stripe limit is 2048 chars)
+    const imageUrl =
+      item.image &&
+      item.image.startsWith("https://") &&
+      item.image.length <= 2000
+        ? [item.image]
+        : undefined
+
+    return {
+      price_data: {
+        currency: "gbp",
+        product_data: {
+          name: item.name,
+          ...(imageUrl ? { images: imageUrl } : {}),
         },
-        quantity: item.quantity,
-      })
-    )
+        unit_amount: Math.round(item.price * 100),
+      },
+      quantity: item.quantity,
+    }
+  }
+)
 
     // Add shipping as a separate line item if applicable
     const shipping = typeof shippingCost === "number" ? shippingCost : 0
